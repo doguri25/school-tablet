@@ -152,7 +152,6 @@ export default function WeeklyView({ selectedClass, allRentals }) {
               <tr key={p.period}>
                 <td style={styles.periodCell}>
                   <div style={styles.pNum}>{p.period}교시</div>
-                  <div style={styles.pTime}>{p.start}~{p.end}</div>
                 </td>
                 {weekDays.map(d => {
                   if (!isAvailable(d, p.period)) {
@@ -306,15 +305,9 @@ const styles = {
     borderBottom: '1px solid #F3F4F6',
   },
   pNum: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 700,
     color: '#374151',
-  },
-  pTime: {
-    fontSize: 9,
-    color: '#9CA3AF',
-    marginTop: 1,
-    fontVariantNumeric: 'tabular-nums',
   },
   cell: {
     padding: '8px 4px',
