@@ -125,7 +125,7 @@ export default function MonthlyView({ selectedClass, allRentals }) {
                       cursor: isCurrentMonth ? 'pointer' : 'default',
                     }}
                   >
-                    <div style={{
+                    <span style={{
                       ...styles.dayNum,
                       color: isToday ? '#fff'
                         : isSun ? '#EF4444'
@@ -133,11 +133,15 @@ export default function MonthlyView({ selectedClass, allRentals }) {
                         : '#374151',
                       background: isToday ? '#1D4ED8' : 'transparent',
                       borderRadius: isToday ? '50%' : 0,
-                      width: 22, height: 22,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      // 오늘만 고정 크기 원형, 나머지는 자연스러운 텍스트 너비
+                      width: isToday ? 22 : 'auto',
+                      height: isToday ? 22 : 'auto',
+                      display: isToday ? 'inline-flex' : 'inline',
+                      alignItems: isToday ? 'center' : undefined,
+                      justifyContent: isToday ? 'center' : undefined,
                     }}>
                       {parseInt(dateStr.slice(8), 10)}
-                    </div>
+                    </span>
                     <div style={styles.dots}>
                       {filtered.slice(0, 3).map(r => {
                         const c = CLASS_COLORS[r.classNumber];
