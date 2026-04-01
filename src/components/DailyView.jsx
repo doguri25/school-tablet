@@ -203,8 +203,11 @@ export default function DailyView({ selectedClass, allRentals }) {
 const styles = {
   container: { display: 'flex', flexDirection: 'column', background: '#F8FAFC', minHeight: '100%' },
   datNav: {
-    display: 'flex', alignItems: 'center', padding: '12px 16px',
-    background: '#fff', borderBottom: '1px solid #E5E7EB', gap: 4,
+    display: 'flex', alignItems: 'center',
+    margin: '8px 8px 0', padding: '10px 14px',
+    background: '#fff', borderRadius: 12,
+    border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+    gap: 8,
   },
   navArrow: {
     width: 36, height: 36, borderRadius: 10, background: '#F3F4F6', border: 'none',

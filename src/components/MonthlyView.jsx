@@ -44,12 +44,11 @@ export default function MonthlyView({ selectedClass, allRentals }) {
     // 부모(main)의 전체 높이를 채우면서 스크롤 없이 표시
     <div style={styles.container}>
 
-      {/* ── 월 네비게이터 + 힌트 ── */}
+      {/* ── 월 네비게이터 ── */}
       <div style={styles.nav}>
         <button style={styles.navBtn} onClick={handlePrev}>‹</button>
         <span style={styles.monthLabel}>{formatMonthKo(year, month)}</span>
         <button style={styles.navBtn} onClick={handleNext}>›</button>
-        <span style={styles.navHint}>날짜를 누르면 교시별 현황을 볼 수 있습니다.</span>
       </div>
 
       {/* ── 반별 통계 + X반만 보기 ── */}
@@ -89,6 +88,9 @@ export default function MonthlyView({ selectedClass, allRentals }) {
           </button>
         )}
       </div>
+
+      {/* ── 힌트 ── */}
+      <div style={styles.hint}>💡 날짜를 누르면 교시별 현황을 볼 수 있습니다.</div>
 
       {/* ── 캘린더 (나머지 공간 채움) ── */}
       <div style={styles.cal}>
@@ -196,20 +198,24 @@ const styles = {
     alignItems: 'center',
     background: '#fff',
     borderRadius: 12,
-    padding: '8px 10px',
+    padding: '10px 14px',
     boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
     border: '1px solid #E5E7EB',
-    gap: 6,
+    gap: 8,
     flexShrink: 0,
   },
   navBtn: {
-    width: 30, height: 30, borderRadius: 8, background: '#F3F4F6', border: 'none',
-    fontSize: 18, color: '#374151', cursor: 'pointer', display: 'flex',
+    width: 36, height: 36, borderRadius: 10, background: '#F3F4F6', border: 'none',
+    fontSize: 22, color: '#374151', cursor: 'pointer', display: 'flex',
     alignItems: 'center', justifyContent: 'center', lineHeight: 1, flexShrink: 0,
   },
-  monthLabel: { fontSize: 15, fontWeight: 800, color: '#111827', flexShrink: 0 },
-  navHint: {
-    flex: 1, textAlign: 'right', fontSize: 10, color: '#9CA3AF', lineHeight: 1.3,
+  monthLabel: { flex: 1, textAlign: 'center', fontSize: 15, fontWeight: 700, color: '#111827' },
+  hint: {
+    flexShrink: 0,
+    textAlign: 'center',
+    fontSize: 11,
+    color: '#9CA3AF',
+    lineHeight: 1.3,
   },
 
   // 통계 행
