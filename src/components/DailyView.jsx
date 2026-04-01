@@ -169,16 +169,16 @@ export default function DailyView({ selectedClass, allRentals }) {
                   // 사용중: 반납(완료처리) + 취소(삭제)
                   <div style={styles.btnGroup}>
                     <button
-                      style={styles.returnBtn}
-                      onClick={e => { e.stopPropagation(); handleReturn(rental.id); }}
-                    >
-                      반납
-                    </button>
-                    <button
                       style={styles.cancelBtn}
                       onClick={e => { e.stopPropagation(); handleCancel(rental.id); }}
                     >
                       취소
+                    </button>
+                    <button
+                      style={styles.returnBtn}
+                      onClick={e => { e.stopPropagation(); handleReturn(rental.id); }}
+                    >
+                      반납
                     </button>
                   </div>
                 ) : selectedClass ? (
