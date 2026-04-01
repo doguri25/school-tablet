@@ -95,7 +95,11 @@ function LocationBar({ status }) {
 }
 
 const styles = {
-  header: { background: 'linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%)', color: '#fff' },
+  header: {
+    background: 'linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%)',
+    color: '#fff',
+    paddingTop: 'env(safe-area-inset-top)',
+  },
   top: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px 8px' },
   titleWrap: {
     display: 'flex', flexDirection: 'column', gap: 1,
