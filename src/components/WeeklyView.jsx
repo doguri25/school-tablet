@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { PERIODS, getMaxPeriod } from '../utils/schedule';
-import { getRentalsByDateRange } from '../utils/storage';
+import { getRentalsByDateRange, addRental, deleteRental, updateRental } from '../utils/storage';
 import { today, getWeekDays, getWeekRangeLabel, prevWeek, nextWeek } from '../utils/dateUtils';
+import ConfirmDialog from './ConfirmDialog';
 
 const CLASS_COLORS = {
   1: { bg: '#DBEAFE', accent: '#1D4ED8' },
@@ -14,16 +15,19 @@ const CLASS_COLORS = {
 
 const DAY_LABELS = ['월', '화', '수', '목', '금'];
 
-export default function WeeklyView({ selectedClass }) {
+export default function WeeklyView({ selectedClass, onRentalChange }) {
   const [baseDate, setBaseDate] = useState(today);
   const [rentals, setRentals] = useState([]);
+  const [confirm, setConfirm] = useState(null); // { type:'register'|'change'|'return', date, period, rental }
 
   const weekDays = getWeekDays(baseDate);
   const todayStr = today();
 
-  useEffect(() => {
+  function refresh() {
     setRentals(getRentalsByDateRange(weekDays[0], weekDays[4]));
-  }, [baseDate]);
+  }
+
+  useEffect(() => { refresh(); }, [baseDate]);
 
   function getRental(dateStr, period) {
     return rentals.find(r => r.date === dateStr && r.period === period) || null;
@@ -33,14 +37,70 @@ export default function WeeklyView({ selectedClass }) {
     return getMaxPeriod(dateStr) >= period;
   }
 
+  function handleCellClick(dateStr, period) {
+    if (!selectedClass) return;
+    const rental = getRental(dateStr, period);
+
+    if (!rental) {
+      // 빈 칸 → 등록 확인
+      setConfirm({ type: 'register', date: dateStr, period, rental: null });
+    } else if (rental.classNumber !== selectedClass) {
+      // 다른 반 → 변경 확인
+      setConfirm({ type: 'change', date: dateStr, period, rental });
+    } else {
+      // 같은 반 → 반납 확인
+      setConfirm({ type: 'return', date: dateStr, period, rental });
+    }
+  }
+
+  function handleConfirm() {
+    if (!confirm) return;
+    if (confirm.type === 'register') {
+      addRental({ date: confirm.date, period: confirm.period, classNumber: selectedClass });
+    } else if (confirm.type === 'change') {
+      updateRental(confirm.rental.id, { classNumber: selectedClass });
+    } else if (confirm.type === 'return') {
+      deleteRental(confirm.rental.id);
+    }
+    setConfirm(null);
+    refresh();
+    onRentalChange?.();
+  }
+
+  function getConfirmMessage() {
+    if (!confirm) return '';
+    const periodLabel = `${confirm.period}교시`;
+    const dateLabel = confirm.date.slice(5).replace('-', '/');
+    if (confirm.type === 'register') {
+      return `${dateLabel} ${periodLabel}\n${selectedClass}반 대여 등록할까요?`;
+    }
+    if (confirm.type === 'change') {
+      return `${dateLabel} ${periodLabel}\n${confirm.rental.classNumber}반 → ${selectedClass}반으로 변경합니다.`;
+    }
+    return `${dateLabel} ${periodLabel}\n${confirm.rental.classNumber}반 대여를 반납할까요?`;
+  }
+
   return (
     <div style={styles.container}>
+      {confirm && (
+        <ConfirmDialog
+          message={getConfirmMessage()}
+          onConfirm={handleConfirm}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+
       {/* 주 네비게이터 */}
       <div style={styles.nav}>
         <button style={styles.navBtn} onClick={() => setBaseDate(prevWeek(baseDate))}>‹</button>
         <span style={styles.weekLabel}>{getWeekRangeLabel(baseDate)}</span>
         <button style={styles.navBtn} onClick={() => setBaseDate(nextWeek(baseDate))}>›</button>
       </div>
+
+      {/* 반 미선택 안내 */}
+      {!selectedClass && (
+        <div style={styles.noClass}>내 반을 선택하면 셀을 눌러 대여 등록할 수 있습니다.</div>
+      )}
 
       {/* 테이블 */}
       <div style={styles.tableWrap}>
@@ -67,7 +127,7 @@ export default function WeeklyView({ selectedClass }) {
             </tr>
           </thead>
           <tbody>
-            {PERIODS.map((p, pi) => (
+            {PERIODS.map((p) => (
               <tr key={p.period}>
                 <td style={styles.periodCell}>
                   <div style={styles.pNum}>{p.period}교시</div>
@@ -80,22 +140,33 @@ export default function WeeklyView({ selectedClass }) {
                   const rental = getRental(d, p.period);
                   const c = rental ? CLASS_COLORS[rental.classNumber] : null;
                   const dim = selectedClass && rental && rental.classNumber !== selectedClass;
+                  const isMyRental = selectedClass && rental?.classNumber === selectedClass;
+                  const clickable = !!selectedClass;
 
                   return (
-                    <td key={d} style={{
-                      ...styles.cell,
-                      background: rental ? c.bg : '#fff',
-                    }}>
+                    <td
+                      key={d}
+                      onClick={() => clickable && handleCellClick(d, p.period)}
+                      style={{
+                        ...styles.cell,
+                        background: rental ? c.bg : '#fff',
+                        cursor: clickable ? 'pointer' : 'default',
+                      }}
+                    >
                       {rental ? (
                         <span style={{
                           ...styles.badge,
                           background: c.accent,
                           opacity: dim ? 0.3 : 1,
+                          outline: isMyRental ? `2px solid ${c.accent}` : 'none',
+                          outlineOffset: 1,
                         }}>
                           {rental.classNumber}반
                         </span>
                       ) : (
-                        <span style={styles.empty}>·</span>
+                        selectedClass
+                          ? <span style={styles.addHint}>+</span>
+                          : <span style={styles.empty}>·</span>
                       )}
                     </td>
                   );
@@ -155,6 +226,15 @@ const styles = {
     fontWeight: 700,
     color: '#111827',
   },
+  noClass: {
+    textAlign: 'center',
+    padding: '10px 16px',
+    fontSize: 12,
+    color: '#9CA3AF',
+    background: '#FFFBEB',
+    borderRadius: 10,
+    border: '1px solid #FEF3C7',
+  },
   tableWrap: {
     overflowX: 'auto',
     borderRadius: 12,
@@ -208,14 +288,15 @@ const styles = {
     fontVariantNumeric: 'tabular-nums',
   },
   cell: {
-    padding: '7px 4px',
+    padding: '8px 4px',
     textAlign: 'center',
     borderRight: '1px solid #F3F4F6',
     borderBottom: '1px solid #F3F4F6',
     transition: 'background 0.1s',
+    minHeight: 38,
   },
   naCell: {
-    padding: '7px 4px',
+    padding: '8px 4px',
     textAlign: 'center',
     background: '#F9FAFB',
     color: '#E5E7EB',
@@ -232,8 +313,13 @@ const styles = {
     fontWeight: 700,
     transition: 'opacity 0.15s',
   },
-  empty: {
+  addHint: {
+    fontSize: 16,
     color: '#D1D5DB',
+    fontWeight: 300,
+  },
+  empty: {
+    color: '#E5E7EB',
     fontSize: 14,
   },
   legend: {

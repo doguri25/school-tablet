@@ -47,7 +47,7 @@ export default function Header({ rentalVersion }) {
           <span style={styles.title}>태블릿 대여장부</span>
         </div>
         <div style={styles.clockWrap}>
-          <div style={styles.dateSmall}>{mo}월 {da}일({dy})</div>
+          <div style={styles.dateBig}>{mo}월 {da}일<span style={styles.dayTag}>({dy})</span></div>
           <div style={styles.clock}>{timeStr}</div>
         </div>
       </div>
@@ -114,19 +114,28 @@ const styles = {
   },
   clockWrap: {
     display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  dateSmall: {
-    fontSize: 11,
+  dateBig: {
+    fontSize: 17,
+    fontWeight: 700,
+    opacity: 0.92,
+    letterSpacing: '-0.3px',
+    lineHeight: 1,
+  },
+  dayTag: {
+    fontSize: 14,
+    fontWeight: 500,
     opacity: 0.75,
   },
   clock: {
-    fontSize: 26,
-    fontWeight: 700,
+    fontSize: 28,
+    fontWeight: 800,
     letterSpacing: '1px',
     fontVariantNumeric: 'tabular-nums',
-    lineHeight: 1.1,
+    lineHeight: 1,
   },
   locationBar: {
     display: 'flex',

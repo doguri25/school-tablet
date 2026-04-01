@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getRentalsByMonth } from '../utils/storage';
 import { today, getMonthCalendar, formatMonthKo, prevMonth, nextMonth } from '../utils/dateUtils';
+import DayDetailSheet from './DayDetailSheet';
 
 const CLASS_COLORS = {
   1: { bg: '#DBEAFE', accent: '#1D4ED8', border: '#93C5FD' },
@@ -13,14 +14,19 @@ const CLASS_COLORS = {
 
 const DAY_HEADERS = ['일', '월', '화', '수', '목', '금', '토'];
 
-export default function MonthlyView({ selectedClass }) {
+export default function MonthlyView({ selectedClass, onRentalChange }) {
   const todayStr = today();
   const nowDate = new Date();
   const [year, setYear] = useState(nowDate.getFullYear());
   const [month, setMonth] = useState(nowDate.getMonth() + 1);
   const [rentals, setRentals] = useState([]);
+  const [sheetDate, setSheetDate] = useState(null); // 클릭한 날짜 (DayDetailSheet 표시용)
 
-  useEffect(() => { setRentals(getRentalsByMonth(year, month)); }, [year, month]);
+  function refresh() {
+    setRentals(getRentalsByMonth(year, month));
+  }
+
+  useEffect(() => { refresh(); }, [year, month]);
 
   const weeks = getMonthCalendar(year, month);
 
@@ -29,6 +35,21 @@ export default function MonthlyView({ selectedClass }) {
 
   function handlePrev() { const p = prevMonth(year, month); setYear(p.year); setMonth(p.month); }
   function handleNext() { const n = nextMonth(year, month); setYear(n.year); setMonth(n.month); }
+
+  function handleDayClick(dateStr, isCurrentMonth) {
+    if (!isCurrentMonth) return;
+    setSheetDate(dateStr);
+  }
+
+  function handleSheetClose() {
+    setSheetDate(null);
+    refresh(); // 등록/반납 후 캘린더 갱신
+  }
+
+  function handleRentalChange() {
+    refresh();
+    onRentalChange?.();
+  }
 
   return (
     <div style={styles.container}>
@@ -63,6 +84,9 @@ export default function MonthlyView({ selectedClass }) {
         </div>
       </div>
 
+      {/* 클릭 안내 */}
+      <div style={styles.hint}>날짜를 누르면 해당 날의 교시별 현황을 볼 수 있습니다.</div>
+
       {/* 캘린더 */}
       <div style={styles.cal}>
         <div style={styles.dayHeaders}>
@@ -84,23 +108,28 @@ export default function MonthlyView({ selectedClass }) {
               const isSat = dayIndex === 6;
 
               return (
-                <div key={dateStr} style={{
-                  ...styles.dayCell,
-                  background: isToday ? '#EFF6FF' : '#fff',
-                  opacity: isCurrentMonth ? 1 : 0.3,
-                  borderBottom: '1px solid #F3F4F6',
-                  borderRight: '1px solid #F3F4F6',
-                }}>
+                <div
+                  key={dateStr}
+                  onClick={() => handleDayClick(dateStr, isCurrentMonth)}
+                  style={{
+                    ...styles.dayCell,
+                    background: isToday ? '#EFF6FF' : '#fff',
+                    opacity: isCurrentMonth ? 1 : 0.25,
+                    borderBottom: '1px solid #F3F4F6',
+                    borderRight: '1px solid #F3F4F6',
+                    cursor: isCurrentMonth ? 'pointer' : 'default',
+                  }}
+                >
                   <div style={{
                     ...styles.dayNum,
-                    color: isToday ? '#1D4ED8'
+                    color: isToday ? '#fff'
                       : isSun ? '#EF4444'
                       : isSat ? '#3B82F6'
                       : '#374151',
-                    background: isToday ? '#DBEAFE' : 'transparent',
+                    background: isToday ? '#1D4ED8' : 'transparent',
                     borderRadius: isToday ? '50%' : 0,
-                    width: isToday ? 20 : 'auto',
-                    height: isToday ? 20 : 'auto',
+                    width: 20,
+                    height: 20,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -114,7 +143,7 @@ export default function MonthlyView({ selectedClass }) {
                         <div key={r.id} style={{
                           ...styles.dot,
                           background: c.accent,
-                        }} title={`${r.classNumber}반 ${r.period}교시`} />
+                        }} />
                       );
                     })}
                     {filtered.length > 3 && (
@@ -127,6 +156,16 @@ export default function MonthlyView({ selectedClass }) {
           </div>
         ))}
       </div>
+
+      {/* 날짜 상세 바텀시트 */}
+      {sheetDate && (
+        <DayDetailSheet
+          dateStr={sheetDate}
+          selectedClass={selectedClass}
+          onClose={handleSheetClose}
+          onRentalChange={handleRentalChange}
+        />
+      )}
     </div>
   );
 }
@@ -196,6 +235,11 @@ const styles = {
     background: '#F3F4F6',
     border: '1.5px solid #E5E7EB',
   },
+  hint: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    textAlign: 'center',
+  },
   cal: {
     background: '#fff',
     borderRadius: 12,
@@ -223,6 +267,8 @@ const styles = {
     minHeight: 56,
     padding: '4px',
     overflow: 'hidden',
+    transition: 'background 0.1s',
+    WebkitTapHighlightColor: 'rgba(0,0,0,0.05)',
   },
   dayNum: {
     fontSize: 12,
@@ -230,6 +276,7 @@ const styles = {
     marginBottom: 3,
     lineHeight: 1,
     fontVariantNumeric: 'tabular-nums',
+    flexShrink: 0,
   },
   dots: {
     display: 'flex',

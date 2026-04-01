@@ -40,10 +40,10 @@ export default function App() {
           <DailyView selectedClass={selectedClass} onRentalChange={handleRentalChange} />
         )}
         {activeTab === 'weekly' && (
-          <WeeklyView selectedClass={selectedClass} />
+          <WeeklyView selectedClass={selectedClass} onRentalChange={handleRentalChange} />
         )}
         {activeTab === 'monthly' && (
-          <MonthlyView selectedClass={selectedClass} />
+          <MonthlyView selectedClass={selectedClass} onRentalChange={handleRentalChange} />
         )}
       </main>
 
