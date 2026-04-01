@@ -331,10 +331,10 @@ const styles = {
   },
   badge: {
     display: 'inline-block',
-    padding: '3px 7px',
+    padding: '4px 8px',
     borderRadius: 6,
     color: '#fff',
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: 700,
     transition: 'opacity 0.15s',
   },
