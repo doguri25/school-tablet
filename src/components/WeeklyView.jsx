@@ -274,6 +274,7 @@ const styles = {
     width: '100%',
     borderCollapse: 'collapse',
     minWidth: 320,
+    tableLayout: 'fixed',
   },
   periodTh: {
     width: 52,
