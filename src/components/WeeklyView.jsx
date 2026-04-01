@@ -219,10 +219,10 @@ export default function WeeklyView({ selectedClass, allRentals }) {
 
 const styles = {
   container: {
-    padding: '12px',
+    padding: '8px',
     display: 'flex',
     flexDirection: 'column',
-    gap: 12,
+    gap: 8,
   },
   nav: {
     display: 'flex',
