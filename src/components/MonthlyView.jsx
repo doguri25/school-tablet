@@ -21,7 +21,25 @@ export default function MonthlyView({ selectedClass, allRentals }) {
   const [sheetDate, setSheetDate] = useState(null);
   const [myClassOnly, setMyClassOnly] = useState(false);
 
-  const weeks = getMonthCalendar(year, month);
+  const rawWeeks = getMonthCalendar(year, month);
+
+  // 항상 6주로 패딩 → 5주 달도 6주 달도 셀 크기 동일
+  const weeks = useMemo(() => {
+    const padded = [...rawWeeks];
+    while (padded.length < 6) {
+      const lastWeek = padded[padded.length - 1];
+      const lastDate = lastWeek[6].dateStr;
+      const newWeek = [];
+      for (let i = 1; i <= 7; i++) {
+        const d = new Date(lastDate + 'T00:00:00');
+        d.setDate(d.getDate() + i);
+        const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        newWeek.push({ dateStr: ds, isCurrentMonth: false, isToday: false, dayIndex: d.getDay() });
+      }
+      padded.push(newWeek);
+    }
+    return padded;
+  }, [rawWeeks]);
 
   const monthPrefix = `${year}-${String(month).padStart(2, '0')}`;
   const rentals = useMemo(
