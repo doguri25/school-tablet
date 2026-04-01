@@ -69,7 +69,7 @@ export default function MonthlyView({ selectedClass, allRentals }) {
         <button style={styles.navBtn} onClick={handleNext}>›</button>
       </div>
 
-      {/* ── 반별 통계 + X반만 보기 ── */}
+      {/* ── 반별 통계 (ClassSelector와 동일한 그리드) ── */}
       <div style={styles.statsRow}>
         {[1,2,3,4,5,6].map(n => {
           const c = CLASS_COLORS[n];
@@ -87,10 +87,11 @@ export default function MonthlyView({ selectedClass, allRentals }) {
             </div>
           );
         })}
-        <div style={styles.totalChip}>
-          <span style={{ fontSize: 10, color: '#6B7280', fontWeight: 600 }}>전체</span>
-          <span style={{ fontSize: 14, fontWeight: 800, color: '#111827', lineHeight: 1 }}>{rentals.length}</span>
-        </div>
+      </div>
+
+      {/* ── 전체 카운트 + 내 반만 보기 ── */}
+      <div style={styles.subRow}>
+        <span style={styles.totalText}>전체 <strong>{rentals.length}</strong>건</span>
         {selectedClass && (
           <button
             onClick={() => setMyClassOnly(v => !v)}
@@ -102,7 +103,7 @@ export default function MonthlyView({ selectedClass, allRentals }) {
               fontWeight: myClassOnly ? 700 : 500,
             }}
           >
-            {myClassOnly ? `✓ ${selectedClass}반만` : `${selectedClass}반만`}
+            {myClassOnly ? `✓ ${selectedClass}반만 보기` : `${selectedClass}반만 보기`}
           </button>
         )}
       </div>
@@ -236,30 +237,32 @@ const styles = {
     lineHeight: 1.3,
   },
 
-  // 통계 행
+  // 통계 행 — ClassSelector와 동일한 6열 그리드
   statsRow: {
-    display: 'flex',
-    gap: 5,
-    alignItems: 'center',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(6, 1fr)',
+    gap: 6,
     flexShrink: 0,
-    flexWrap: 'nowrap',
-    overflowX: 'auto',
   },
   statChip: {
     display: 'flex', flexDirection: 'column', alignItems: 'center',
-    padding: '5px 7px', borderRadius: 9, gap: 2, flexShrink: 0,
-    minWidth: 36, transition: 'opacity 0.15s',
+    padding: '7px 0', borderRadius: 10, gap: 2,
+    transition: 'opacity 0.15s',
   },
-  totalChip: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center',
-    padding: '5px 7px', borderRadius: 9, gap: 2, flexShrink: 0,
-    minWidth: 36, background: '#F3F4F6', border: '1.5px solid #E5E7EB',
+  // 전체 카운트 + 필터 행
+  subRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexShrink: 0,
+  },
+  totalText: {
+    fontSize: 11, color: '#9CA3AF',
   },
   filterBtn: {
-    flexShrink: 0, padding: '5px 9px', borderRadius: 20,
+    padding: '5px 11px', borderRadius: 20,
     fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap',
     transition: 'all 0.15s', WebkitTapHighlightColor: 'transparent',
-    marginLeft: 'auto',
   },
 
   // 캘린더

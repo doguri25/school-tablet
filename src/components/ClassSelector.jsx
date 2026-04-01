@@ -10,7 +10,7 @@ const CLASS_COLORS = {
 export default function ClassSelector({ selectedClass, onSelectClass }) {
   return (
     <div style={styles.wrapper}>
-      <span style={styles.label}>내 반</span>
+      <span style={styles.label}>내 반 선택</span>
       <div style={styles.pills}>
         {[1, 2, 3, 4, 5, 6].map(num => {
           const c = CLASS_COLORS[num];
@@ -40,34 +40,32 @@ export default function ClassSelector({ selectedClass, onSelectClass }) {
 
 const styles = {
   wrapper: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    padding: '10px 16px',
     background: '#fff',
     borderBottom: '1px solid #F3F4F6',
-    overflowX: 'auto',
+    padding: '6px 8px 8px',
   },
   label: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 600,
     color: '#9CA3AF',
-    whiteSpace: 'nowrap',
-    flexShrink: 0,
+    marginBottom: 4,
+    paddingLeft: 2,
+    display: 'block',
   },
   pills: {
-    display: 'flex',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(6, 1fr)',
     gap: 6,
-    flexShrink: 0,
   },
   pill: {
-    padding: '6px 14px',
-    borderRadius: 20,
+    padding: '7px 0',
+    borderRadius: 10,
     fontSize: 13,
     cursor: 'pointer',
     whiteSpace: 'nowrap',
     transition: 'all 0.15s',
     letterSpacing: '-0.2px',
+    textAlign: 'center',
   },
   dot: {
     fontSize: 11,
