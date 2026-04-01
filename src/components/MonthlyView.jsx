@@ -19,6 +19,7 @@ export default function MonthlyView({ selectedClass, allRentals }) {
   const [year, setYear] = useState(nowDate.getFullYear());
   const [month, setMonth] = useState(nowDate.getMonth() + 1);
   const [sheetDate, setSheetDate] = useState(null);
+  const [myClassOnly, setMyClassOnly] = useState(false);
 
   const weeks = getMonthCalendar(year, month);
 
@@ -61,7 +62,7 @@ export default function MonthlyView({ selectedClass, allRentals }) {
               ...styles.statChip,
               background: c.bg,
               border: `1.5px solid ${isSelected ? c.accent : c.border}`,
-              opacity: selectedClass && !isSelected ? 0.5 : 1,
+              opacity: (myClassOnly && selectedClass && !isSelected) ? 0.3 : 1,
             }}>
               <span style={{ fontSize: 11, color: c.accent, fontWeight: 600 }}>{n}반</span>
               <span style={{ fontSize: 15, fontWeight: 800, color: c.accent, lineHeight: 1 }}>{cnt}</span>
@@ -74,7 +75,24 @@ export default function MonthlyView({ selectedClass, allRentals }) {
         </div>
       </div>
 
-      <div style={styles.hint}>날짜를 누르면 해당 날의 교시별 현황을 볼 수 있습니다.</div>
+      {/* 필터 토글 */}
+      <div style={styles.filterRow}>
+        <span style={styles.filterLabel}>날짜를 누르면 해당 날의 교시별 현황을 볼 수 있습니다.</span>
+        {selectedClass && (
+          <button
+            onClick={() => setMyClassOnly(v => !v)}
+            style={{
+              ...styles.filterBtn,
+              background: myClassOnly ? CLASS_COLORS[selectedClass].bg : '#F3F4F6',
+              color: myClassOnly ? CLASS_COLORS[selectedClass].accent : '#6B7280',
+              border: `1.5px solid ${myClassOnly ? CLASS_COLORS[selectedClass].accent : '#E5E7EB'}`,
+              fontWeight: myClassOnly ? 700 : 500,
+            }}
+          >
+            {myClassOnly ? `✓ ${selectedClass}반만 보기` : `${selectedClass}반만 보기`}
+          </button>
+        )}
+      </div>
 
       <div style={styles.cal}>
         <div style={styles.dayHeaders}>
@@ -89,7 +107,7 @@ export default function MonthlyView({ selectedClass, allRentals }) {
           <div key={wi} style={styles.week}>
             {week.map(({ dateStr, isCurrentMonth, isToday, dayIndex }) => {
               const dayRentals = rentals.filter(r => r.date === dateStr);
-              const filtered = selectedClass
+              const filtered = (myClassOnly && selectedClass)
                 ? dayRentals.filter(r => r.classNumber === selectedClass)
                 : dayRentals;
               const isSun = dayIndex === 0;
@@ -173,7 +191,15 @@ const styles = {
     padding: '7px 10px', borderRadius: 10, gap: 3, flexShrink: 0, minWidth: 44,
     background: '#F3F4F6', border: '1.5px solid #E5E7EB',
   },
-  hint: { fontSize: 11, color: '#9CA3AF', textAlign: 'center' },
+  filterRow: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+  },
+  filterLabel: { fontSize: 11, color: '#9CA3AF', flex: 1 },
+  filterBtn: {
+    flexShrink: 0, padding: '5px 12px', borderRadius: 20,
+    fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap',
+    transition: 'all 0.15s', WebkitTapHighlightColor: 'transparent',
+  },
   cal: {
     background: '#fff', borderRadius: 12, overflow: 'hidden',
     border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
