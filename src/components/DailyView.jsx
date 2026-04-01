@@ -77,15 +77,15 @@ export default function DailyView({ selectedClass, onRentalChange }) {
       <div style={styles.datNav}>
         <button style={styles.navArrow} onClick={() => setDateStr(prev => addDays(prev, -1))}>‹</button>
         <div style={styles.datCenter}>
-          <input
-            type="date"
-            value={dateStr}
-            onChange={e => setDateStr(e.target.value)}
-            style={styles.dateHidden}
-            id="date-pick"
-          />
-          <label htmlFor="date-pick" style={styles.dateDisplay}>
-            <span style={styles.dateText}>{formatDateKo(dateStr)} ({getDayLabel(dateStr)})</span>
+          {/* label이 input을 감싸서 클릭 영역이 텍스트 크기만큼만 적용됨 */}
+          <label style={styles.dateDisplay}>
+            <input
+              type="date"
+              value={dateStr}
+              onChange={e => setDateStr(e.target.value)}
+              style={styles.dateHidden}
+            />
+            <span style={styles.dateText}>📅 {formatDateKo(dateStr)} ({getDayLabel(dateStr)})</span>
             {isToday && <span style={styles.todayPill}>오늘</span>}
           </label>
         </div>
@@ -219,21 +219,25 @@ const styles = {
     flex: 1,
     display: 'flex',
     justifyContent: 'center',
-    position: 'relative',
   },
   dateHidden: {
     position: 'absolute',
+    inset: 0,
     opacity: 0,
-    width: '100%',
-    height: '100%',
     cursor: 'pointer',
     zIndex: 1,
+    width: '100%',
+    height: '100%',
   },
   dateDisplay: {
-    display: 'flex',
+    display: 'inline-flex',
     alignItems: 'center',
     gap: 6,
     cursor: 'pointer',
+    position: 'relative',   /* input이 이 안에서만 absolute 적용 */
+    padding: '6px 10px',
+    borderRadius: 10,
+    background: '#F3F4F6',
   },
   dateText: {
     fontSize: 15,
@@ -329,22 +333,22 @@ const styles = {
     marginLeft: 'auto',
   },
   returnBtn: {
-    padding: '6px 12px',
-    borderRadius: 8,
+    padding: '10px 18px',
+    borderRadius: 10,
     background: '#FEF2F2',
     color: '#DC2626',
-    fontSize: 12,
-    fontWeight: 600,
-    border: '1px solid #FECACA',
+    fontSize: 14,
+    fontWeight: 700,
+    border: '1.5px solid #FECACA',
     cursor: 'pointer',
     whiteSpace: 'nowrap',
   },
   registerBtn: {
-    padding: '6px 12px',
-    borderRadius: 8,
+    padding: '10px 18px',
+    borderRadius: 10,
     color: '#fff',
-    fontSize: 12,
-    fontWeight: 600,
+    fontSize: 14,
+    fontWeight: 700,
     border: 'none',
     cursor: 'pointer',
     whiteSpace: 'nowrap',

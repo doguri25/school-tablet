@@ -42,7 +42,7 @@ export default function Header({ rentalVersion }) {
   return (
     <header style={styles.header}>
       <div style={styles.top}>
-        <div style={styles.titleWrap}>
+        <div style={styles.titleWrap} onClick={() => window.location.reload()}>
           <span style={styles.school}>홍북초 3학년</span>
           <span style={styles.title}>태블릿 대여장부</span>
         </div>
@@ -100,6 +100,9 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: 1,
+    cursor: 'pointer',
+    userSelect: 'none',
+    WebkitTapHighlightColor: 'transparent',
   },
   school: {
     fontSize: 11,
