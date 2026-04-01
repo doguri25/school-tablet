@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getPeriodsForDate, getCurrentPeriod } from '../utils/schedule';
 import { getRentalsByDate, addRental, deleteRental, updateRental } from '../utils/storage';
-import { today, formatDateKo, getDayLabel } from '../utils/dateUtils';
+import { today, formatDate, formatDateKo, getDayLabel } from '../utils/dateUtils';
 import ConfirmDialog from './ConfirmDialog';
 
 const CLASS_COLORS = {
@@ -16,7 +16,7 @@ const CLASS_COLORS = {
 function addDays(dateStr, n) {
   const d = new Date(dateStr + 'T00:00:00');
   d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
+  return formatDate(d);
 }
 
 export default function DailyView({ selectedClass, onRentalChange }) {
