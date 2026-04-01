@@ -42,14 +42,19 @@ export async function deleteRental(id) {
   }
 }
 
-export async function updateRental(id, { classNumber }) {
+export async function updateRental(id, updates) {
   if (isConfigured && db) {
-    await updateDoc(doc(db, COLLECTION, id), { classNumber });
+    await updateDoc(doc(db, COLLECTION, id), updates);
   } else {
     const all = localGetAll();
     const idx = all.findIndex(r => r.id === id);
-    if (idx !== -1) { all[idx] = { ...all[idx], classNumber }; localSave(all); }
+    if (idx !== -1) { all[idx] = { ...all[idx], ...updates }; localSave(all); }
   }
+}
+
+// 반납: 삭제 대신 status를 'completed'로 변경
+export async function returnRental(id) {
+  return updateRental(id, { status: 'completed', returnedAt: new Date().toISOString() });
 }
 
 // ── 실시간 리스너 구독 (App.jsx에서 한 번만 호출) ─────────────────────

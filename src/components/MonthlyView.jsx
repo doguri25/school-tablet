@@ -142,7 +142,15 @@ export default function MonthlyView({ selectedClass, allRentals }) {
                   <div style={styles.dots}>
                     {filtered.slice(0, 3).map(r => {
                       const c = CLASS_COLORS[r.classNumber];
-                      return <div key={r.id} style={{ ...styles.dot, background: c.accent }} />;
+                      const done = r.status === 'completed';
+                      return (
+                        <div key={r.id} style={{
+                          ...styles.dot,
+                          background: done ? 'transparent' : c.accent,
+                          border: done ? `1.5px solid ${c.accent}` : 'none',
+                          opacity: done ? 0.6 : 1,
+                        }} />
+                      );
                     })}
                     {filtered.length > 3 && (
                       <span style={styles.more}>+{filtered.length - 3}</span>

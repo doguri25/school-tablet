@@ -28,11 +28,13 @@ export default function Header({ allRentals }) {
   const da = now.getDate();
   const dy = DAY_SHORT[now.getDay()];
 
-  // 현재 교시 대여 기록 (allRentals에서 실시간 반영)
+  // 현재 교시 대여 기록 — 사용완료(completed) 제외, 사용중인 것만 표시
   const currentRental = useMemo(() => {
     if (!currentPeriod || currentPeriod === 'lunch') return null;
     const todayStr = today();
-    return allRentals.find(r => r.date === todayStr && r.period === currentPeriod) || null;
+    return allRentals.find(
+      r => r.date === todayStr && r.period === currentPeriod && r.status !== 'completed'
+    ) || null;
   }, [allRentals, currentPeriod]);
 
   const status = useMemo(() => {

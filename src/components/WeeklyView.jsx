@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { PERIODS, getMaxPeriod } from '../utils/schedule';
-import { addRental, deleteRental, updateRental } from '../utils/storage';
+import { addRental, deleteRental, returnRental, updateRental } from '../utils/storage';
 import { today, getWeekDays, getWeekRangeLabel, prevWeek, nextWeek } from '../utils/dateUtils';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -41,51 +41,75 @@ export default function WeeklyView({ selectedClass, allRentals }) {
     const rental = getRental(dateStr, period);
 
     if (!rental) {
-      // 빈 칸 → 등록 확인
       setConfirm({ type: 'register', date: dateStr, period, rental: null });
+    } else if (rental.status === 'completed') {
+      // 완료된 항목 클릭 → 삭제만 가능
+      setConfirm({ type: 'cancel', date: dateStr, period, rental });
     } else if (rental.classNumber !== selectedClass) {
-      // 다른 반 → 변경 확인
       setConfirm({ type: 'change', date: dateStr, period, rental });
     } else {
-      // 같은 반 → 반납 확인
-      setConfirm({ type: 'return', date: dateStr, period, rental });
+      // 같은 반 사용중 → 반납(완료처리) 또는 취소(삭제)
+      setConfirm({ type: 'own', date: dateStr, period, rental });
     }
   }
 
   function handleConfirm() {
     if (!confirm) return;
     if (confirm.type === 'register') {
-      addRental({ date: confirm.date, period: confirm.period, classNumber: selectedClass });
+      addRental({ date: confirm.date, period: confirm.period, classNumber: selectedClass, status: 'active' });
     } else if (confirm.type === 'change') {
       updateRental(confirm.rental.id, { classNumber: selectedClass });
-    } else if (confirm.type === 'return') {
+    } else if (confirm.type === 'own') {
+      // 반납(사용완료 처리)
+      returnRental(confirm.rental.id);
+    } else if (confirm.type === 'cancel') {
       deleteRental(confirm.rental.id);
     }
     setConfirm(null);
   }
 
-  function getConfirmMessage() {
-    if (!confirm) return '';
+  function handleSecondary() {
+    // 취소(삭제) 버튼
+    if (confirm?.type === 'own') deleteRental(confirm.rental.id);
+    setConfirm(null);
+  }
+
+  function getConfirmProps() {
+    if (!confirm) return {};
     const periodLabel = `${confirm.period}교시`;
     const dateLabel = confirm.date.slice(5).replace('-', '/');
     if (confirm.type === 'register') {
-      return `${dateLabel} ${periodLabel}\n${selectedClass}반 대여 등록할까요?`;
+      return { message: `${dateLabel} ${periodLabel}\n${selectedClass}반 대여 등록할까요?`, confirmLabel: '등록' };
     }
     if (confirm.type === 'change') {
-      return `${dateLabel} ${periodLabel}\n${confirm.rental.classNumber}반 → ${selectedClass}반으로 변경합니다.`;
+      return { message: `${dateLabel} ${periodLabel}\n${confirm.rental.classNumber}반 → ${selectedClass}반으로 변경합니다.`, confirmLabel: '변경' };
     }
-    return `${dateLabel} ${periodLabel}\n${confirm.rental.classNumber}반 대여를 반납할까요?`;
+    if (confirm.type === 'own') {
+      return {
+        message: `${dateLabel} ${periodLabel}\n${confirm.rental.classNumber}반 태블릿 처리 방법을 선택하세요.`,
+        confirmLabel: '반납',
+        onSecondary: handleSecondary, secondaryLabel: '취소(삭제)',
+      };
+    }
+    return { message: `${dateLabel} ${periodLabel}\n사용완료 기록을 삭제할까요?`, confirmLabel: '삭제' };
   }
 
   return (
     <div style={styles.container}>
-      {confirm && (
-        <ConfirmDialog
-          message={getConfirmMessage()}
-          onConfirm={handleConfirm}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
+      {confirm && (() => {
+        const props = getConfirmProps();
+        return (
+          <ConfirmDialog
+            message={props.message}
+            onConfirm={handleConfirm}
+            confirmLabel={props.confirmLabel}
+            onSecondary={props.onSecondary}
+            secondaryLabel={props.secondaryLabel}
+            onCancel={() => setConfirm(null)}
+            cancelLabel="닫기"
+          />
+        );
+      })()}
 
       {/* 주 네비게이터 */}
       <div style={styles.nav}>
@@ -135,8 +159,9 @@ export default function WeeklyView({ selectedClass, allRentals }) {
                     return <td key={d} style={styles.naCell}>—</td>;
                   }
                   const rental = getRental(d, p.period);
+                  const isCompleted = rental?.status === 'completed';
                   const c = rental ? CLASS_COLORS[rental.classNumber] : null;
-                  const dim = selectedClass && rental && rental.classNumber !== selectedClass;
+                  const dim = selectedClass && rental && rental.classNumber !== selectedClass && !isCompleted;
                   const isMyRental = selectedClass && rental?.classNumber === selectedClass;
                   const clickable = !!selectedClass;
 
@@ -146,20 +171,26 @@ export default function WeeklyView({ selectedClass, allRentals }) {
                       onClick={() => clickable && handleCellClick(d, p.period)}
                       style={{
                         ...styles.cell,
-                        background: rental ? c.bg : '#fff',
+                        background: rental ? (isCompleted ? '#F9FAFB' : c.bg) : '#fff',
                         cursor: clickable ? 'pointer' : 'default',
                       }}
                     >
                       {rental ? (
-                        <span style={{
-                          ...styles.badge,
-                          background: c.accent,
-                          opacity: dim ? 0.3 : 1,
-                          outline: isMyRental ? `2px solid ${c.accent}` : 'none',
-                          outlineOffset: 1,
-                        }}>
-                          {rental.classNumber}반
-                        </span>
+                        isCompleted ? (
+                          <span style={{ ...styles.badge, background: '#9CA3AF', opacity: 0.7 }}>
+                            {rental.classNumber}반✓
+                          </span>
+                        ) : (
+                          <span style={{
+                            ...styles.badge,
+                            background: c.accent,
+                            opacity: dim ? 0.3 : 1,
+                            outline: isMyRental ? `2px solid ${c.accent}` : 'none',
+                            outlineOffset: 1,
+                          }}>
+                            {rental.classNumber}반
+                          </span>
+                        )
                       ) : (
                         selectedClass
                           ? <span style={styles.addHint}>+</span>

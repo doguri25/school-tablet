@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { getPeriodsForDate, getCurrentPeriod } from '../utils/schedule';
-import { addRental, deleteRental, updateRental } from '../utils/storage';
+import { addRental, deleteRental, returnRental, updateRental } from '../utils/storage';
 import { today, formatDate, formatDateKo, getDayLabel } from '../utils/dateUtils';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -33,7 +33,6 @@ export default function DailyView({ selectedClass, allRentals }) {
     return () => clearInterval(id);
   }, []);
 
-  // 현재 날짜의 대여 목록 (allRentals에서 필터 — 실시간 자동 반영)
   const rentals = useMemo(
     () => allRentals.filter(r => r.date === dateStr),
     [allRentals, dateStr]
@@ -45,16 +44,23 @@ export default function DailyView({ selectedClass, allRentals }) {
 
   function handleRegister(period) {
     if (!selectedClass) return;
-    if (getRentalForPeriod(period)) return; // 이미 등록됨
-    addRental({ date: dateStr, period, classNumber: selectedClass });
+    if (getRentalForPeriod(period)) return;
+    addRental({ date: dateStr, period, classNumber: selectedClass, status: 'active' });
   }
 
-  function handleDelete(id) {
+  // 반납: status를 'completed'로 변경 (기록 유지)
+  function handleReturn(id) {
+    returnRental(id);
+  }
+
+  // 취소: 기록 완전 삭제
+  function handleCancel(id) {
     deleteRental(id);
   }
 
   function handleCardClick(rental) {
     if (!selectedClass || !rental || rental.classNumber === selectedClass) return;
+    if (rental.status === 'completed') return; // 완료된 항목은 변경 불가
     setChangeConfirm({ rental, fromClass: rental.classNumber, toClass: selectedClass });
   }
 
@@ -99,9 +105,11 @@ export default function DailyView({ selectedClass, allRentals }) {
       <div style={styles.list}>
         {periods.map((p, idx) => {
           const rental = getRentalForPeriod(p.period);
+          const isCompleted = rental?.status === 'completed';
+          const isActive = rental && !isCompleted;
           const isCurrent = isToday && currentPeriod === p.period;
           const c = rental ? CLASS_COLORS[rental.classNumber] : null;
-          const isChangeable = rental && selectedClass && rental.classNumber !== selectedClass;
+          const isChangeable = isActive && selectedClass && rental.classNumber !== selectedClass;
           const isLast = idx === periods.length - 1;
 
           return (
@@ -110,9 +118,10 @@ export default function DailyView({ selectedClass, allRentals }) {
               onClick={() => isChangeable && handleCardClick(rental)}
               style={{
                 ...styles.row,
-                background: rental ? c.light : '#fff',
+                background: isCompleted ? '#F9FAFB' : (rental ? c.light : '#fff'),
                 borderBottom: isLast ? 'none' : '1px solid #F3F4F6',
                 cursor: isChangeable ? 'pointer' : 'default',
+                opacity: isCompleted ? 0.85 : 1,
               }}
             >
               <div style={{ ...styles.currentBar, background: isCurrent ? '#F59E0B' : 'transparent' }} />
@@ -129,7 +138,12 @@ export default function DailyView({ selectedClass, allRentals }) {
               </div>
 
               <div style={styles.statusArea}>
-                {rental ? (
+                {isCompleted ? (
+                  <div style={{ ...styles.completedBadge, color: c.accent }}>
+                    <span style={{ ...styles.completedDot, background: c.accent }} />
+                    {rental.classNumber}반 사용완료
+                  </div>
+                ) : isActive ? (
                   <div style={{
                     ...styles.classBadge,
                     background: c.bg, color: c.accent, border: `1px solid ${c.border}`,
@@ -143,13 +157,30 @@ export default function DailyView({ selectedClass, allRentals }) {
               </div>
 
               <div style={styles.actionArea}>
-                {rental ? (
+                {isCompleted ? (
+                  // 사용완료: 취소(삭제)만 가능
                   <button
-                    style={styles.returnBtn}
-                    onClick={e => { e.stopPropagation(); handleDelete(rental.id); }}
+                    style={styles.cancelSmallBtn}
+                    onClick={e => { e.stopPropagation(); handleCancel(rental.id); }}
                   >
-                    반납
+                    삭제
                   </button>
+                ) : isActive ? (
+                  // 사용중: 반납(완료처리) + 취소(삭제)
+                  <div style={styles.btnGroup}>
+                    <button
+                      style={styles.returnBtn}
+                      onClick={e => { e.stopPropagation(); handleReturn(rental.id); }}
+                    >
+                      반납
+                    </button>
+                    <button
+                      style={styles.cancelBtn}
+                      onClick={e => { e.stopPropagation(); handleCancel(rental.id); }}
+                    >
+                      취소
+                    </button>
+                  </div>
                 ) : selectedClass ? (
                   <button
                     style={{ ...styles.registerBtn, background: CLASS_COLORS[selectedClass].accent }}
@@ -194,25 +225,38 @@ const styles = {
   },
   list: {
     background: '#fff', margin: '12px', borderRadius: 14, overflow: 'hidden',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
-    border: '1px solid #E5E7EB',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #E5E7EB',
   },
   row: {
     display: 'flex', alignItems: 'center', padding: '11px 14px 11px 0',
     gap: 10, position: 'relative', transition: 'background 0.1s',
   },
-  currentBar: { width: 3, alignSelf: 'stretch', borderRadius: '0 2px 2px 0', flexShrink: 0, marginLeft: 0 },
+  currentBar: { width: 3, alignSelf: 'stretch', borderRadius: '0 2px 2px 0', flexShrink: 0 },
   periodMeta: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, width: 48, flexShrink: 0 },
   periodBadge: { fontSize: 12, fontWeight: 700, padding: '3px 6px', borderRadius: 6, whiteSpace: 'nowrap' },
   periodTime: { fontSize: 10, color: '#9CA3AF', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' },
-  statusArea: { display: 'flex', alignItems: 'center', minWidth: 0, overflow: 'hidden' },
+  statusArea: { flex: 1, display: 'flex', alignItems: 'center', minWidth: 0, overflow: 'hidden' },
   classBadge: { display: 'inline-flex', alignItems: 'center', fontSize: 13, fontWeight: 600, padding: '5px 10px', borderRadius: 8, gap: 2 },
+  completedBadge: {
+    display: 'inline-flex', alignItems: 'center', gap: 5,
+    fontSize: 12, fontWeight: 600, opacity: 0.8,
+  },
+  completedDot: { width: 7, height: 7, borderRadius: '50%', flexShrink: 0, opacity: 0.6 },
   changeArrow: { fontSize: 11, opacity: 0.7 },
   freeBadge: { fontSize: 13, color: '#9CA3AF', fontWeight: 500 },
-  actionArea: { flexShrink: 0, marginLeft: 'auto' },
+  actionArea: { flexShrink: 0 },
+  btnGroup: { display: 'flex', gap: 5 },
   returnBtn: {
-    padding: '10px 18px', borderRadius: 10, background: '#FEF2F2', color: '#DC2626',
-    fontSize: 14, fontWeight: 700, border: '1.5px solid #FECACA', cursor: 'pointer', whiteSpace: 'nowrap',
+    padding: '8px 14px', borderRadius: 8, background: '#EFF6FF', color: '#1D4ED8',
+    fontSize: 13, fontWeight: 700, border: '1.5px solid #BFDBFE', cursor: 'pointer', whiteSpace: 'nowrap',
+  },
+  cancelBtn: {
+    padding: '8px 14px', borderRadius: 8, background: '#FEF2F2', color: '#DC2626',
+    fontSize: 13, fontWeight: 700, border: '1.5px solid #FECACA', cursor: 'pointer', whiteSpace: 'nowrap',
+  },
+  cancelSmallBtn: {
+    padding: '6px 10px', borderRadius: 7, background: '#F9FAFB', color: '#9CA3AF',
+    fontSize: 11, fontWeight: 600, border: '1px solid #E5E7EB', cursor: 'pointer', whiteSpace: 'nowrap',
   },
   registerBtn: {
     padding: '10px 18px', borderRadius: 10, color: '#fff',
