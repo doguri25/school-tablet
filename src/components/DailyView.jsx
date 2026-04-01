@@ -75,7 +75,7 @@ export default function DailyView({ selectedClass, onRentalChange }) {
 
       {/* 날짜 네비게이터 */}
       <div style={styles.datNav}>
-        <button style={styles.navArrow} onClick={() => setDateStr(addDays(dateStr, -1))}>‹</button>
+        <button style={styles.navArrow} onClick={() => setDateStr(prev => addDays(prev, -1))}>‹</button>
         <div style={styles.datCenter}>
           <input
             type="date"
@@ -89,7 +89,7 @@ export default function DailyView({ selectedClass, onRentalChange }) {
             {isToday && <span style={styles.todayPill}>오늘</span>}
           </label>
         </div>
-        <button style={styles.navArrow} onClick={() => setDateStr(addDays(dateStr, 1))}>›</button>
+        <button style={styles.navArrow} onClick={() => setDateStr(prev => addDays(prev, 1))}>›</button>
       </div>
 
       {/* 반 미선택 안내 */}

@@ -92,9 +92,9 @@ export default function WeeklyView({ selectedClass, onRentalChange }) {
 
       {/* 주 네비게이터 */}
       <div style={styles.nav}>
-        <button style={styles.navBtn} onClick={() => setBaseDate(prevWeek(baseDate))}>‹</button>
+        <button style={styles.navBtn} onClick={() => setBaseDate(prev => prevWeek(prev))}>‹</button>
         <span style={styles.weekLabel}>{getWeekRangeLabel(baseDate)}</span>
-        <button style={styles.navBtn} onClick={() => setBaseDate(nextWeek(baseDate))}>›</button>
+        <button style={styles.navBtn} onClick={() => setBaseDate(prev => nextWeek(prev))}>›</button>
       </div>
 
       {/* 반 미선택 안내 */}
