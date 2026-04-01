@@ -133,7 +133,7 @@ export default function MonthlyView({ selectedClass, allRentals }) {
                         : '#374151',
                       background: isToday ? '#1D4ED8' : 'transparent',
                       borderRadius: isToday ? '50%' : 0,
-                      width: 18, height: 18,
+                      width: 22, height: 22,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                       {parseInt(dateStr.slice(8), 10)}
@@ -251,7 +251,7 @@ const styles = {
     background: '#F9FAFB', borderBottom: '1px solid #E5E7EB',
     flexShrink: 0,
   },
-  dayHeader: { padding: '5px 0', textAlign: 'center', fontSize: 11, fontWeight: 700 },
+  dayHeader: { padding: '6px 0', textAlign: 'center', fontSize: 12, fontWeight: 700 },
   weeksWrap: {
     flex: 1,
     display: 'flex',
@@ -266,7 +266,7 @@ const styles = {
     minHeight: 0,
   },
   dayCell: {
-    padding: '3px',
+    padding: '4px',
     overflow: 'hidden',
     transition: 'background 0.1s',
     WebkitTapHighlightColor: 'rgba(0,0,0,0.05)',
@@ -276,10 +276,10 @@ const styles = {
     gap: 2,
   },
   dayNum: {
-    fontSize: 11, fontWeight: 500, lineHeight: 1,
+    fontSize: 13, fontWeight: 600, lineHeight: 1,
     fontVariantNumeric: 'tabular-nums', flexShrink: 0,
   },
-  dots: { display: 'flex', flexWrap: 'wrap', gap: 2 },
-  dot: { width: 6, height: 6, borderRadius: '50%', flexShrink: 0 },
-  more: { fontSize: 9, color: '#9CA3AF', fontWeight: 600, lineHeight: 1, alignSelf: 'center' },
+  dots: { display: 'flex', flexWrap: 'wrap', gap: 3 },
+  dot: { width: 8, height: 8, borderRadius: '50%', flexShrink: 0 },
+  more: { fontSize: 10, color: '#9CA3AF', fontWeight: 600, lineHeight: 1, alignSelf: 'center' },
 };
