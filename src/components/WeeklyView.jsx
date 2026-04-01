@@ -298,7 +298,7 @@ const styles = {
     borderRadius: 2,
   },
   periodCell: {
-    padding: '8px 6px',
+    padding: '14px 6px',
     textAlign: 'center',
     background: '#F9FAFB',
     borderRight: '1px solid #E5E7EB',
@@ -310,15 +310,15 @@ const styles = {
     color: '#374151',
   },
   cell: {
-    padding: '8px 4px',
+    padding: '14px 4px',
     textAlign: 'center',
     borderRight: '1px solid #F3F4F6',
     borderBottom: '1px solid #F3F4F6',
     transition: 'background 0.1s',
-    minHeight: 38,
+    minHeight: 52,
   },
   naCell: {
-    padding: '8px 4px',
+    padding: '14px 4px',
     textAlign: 'center',
     background: '#F9FAFB',
     color: '#E5E7EB',
