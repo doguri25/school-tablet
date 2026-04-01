@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { today, getMonthCalendar, formatMonthKo, prevMonth, nextMonth } from '../utils/dateUtils';
 import DayDetailSheet from './DayDetailSheet';
+import { LABEL_WIDTH } from './ClassSelector';
 
 const CLASS_COLORS = {
   1: { bg: '#DBEAFE', accent: '#1D4ED8', border: '#93C5FD' },
@@ -69,43 +70,47 @@ export default function MonthlyView({ selectedClass, allRentals }) {
         <button style={styles.navBtn} onClick={handleNext}>›</button>
       </div>
 
-      {/* ── 반별 통계 (ClassSelector와 동일한 그리드) ── */}
+      {/* ── 반별 통계 — ClassSelector와 동일한 구조(레이블 너비 + 6열 그리드) ── */}
       <div style={styles.statsRow}>
-        {[1,2,3,4,5,6].map(n => {
-          const c = CLASS_COLORS[n];
-          const cnt = classCounts[n] || 0;
-          const isSelected = selectedClass === n;
-          return (
-            <div key={n} style={{
-              ...styles.statChip,
-              background: c.bg,
-              border: `1.5px solid ${isSelected ? c.accent : c.border}`,
-              opacity: (myClassOnly && selectedClass && !isSelected) ? 0.3 : 1,
-            }}>
-              <span style={{ fontSize: 10, color: c.accent, fontWeight: 600 }}>{n}반</span>
-              <span style={{ fontSize: 14, fontWeight: 800, color: c.accent, lineHeight: 1 }}>{cnt}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* ── 전체 카운트 + 내 반만 보기 ── */}
-      <div style={styles.subRow}>
-        <span style={styles.totalText}>전체 <strong>{rentals.length}</strong>건</span>
-        {selectedClass && (
+        {/* 왼쪽: X반만 보기 버튼 (내 반 선택 레이블과 동일 너비) */}
+        {selectedClass ? (
           <button
             onClick={() => setMyClassOnly(v => !v)}
             style={{
               ...styles.filterBtn,
               background: myClassOnly ? CLASS_COLORS[selectedClass].bg : '#F3F4F6',
-              color: myClassOnly ? CLASS_COLORS[selectedClass].accent : '#6B7280',
-              border: `1.5px solid ${myClassOnly ? CLASS_COLORS[selectedClass].accent : '#E5E7EB'}`,
-              fontWeight: myClassOnly ? 700 : 500,
+              color: myClassOnly ? CLASS_COLORS[selectedClass].accent : '#9CA3AF',
+              border: `1.5px solid ${myClassOnly ? CLASS_COLORS[selectedClass].accent : 'transparent'}`,
+              fontWeight: myClassOnly ? 700 : 600,
             }}
           >
-            {myClassOnly ? `✓ ${selectedClass}반만 보기` : `${selectedClass}반만 보기`}
+            {myClassOnly ? `✓ ${selectedClass}반만` : '내 반만'}
           </button>
+        ) : (
+          <div style={styles.filterPlaceholder}>
+            <span style={{ fontSize: 10, color: '#9CA3AF' }}>전체 {rentals.length}건</span>
+          </div>
         )}
+
+        {/* 오른쪽: 6열 그리드 */}
+        <div style={styles.chipsGrid}>
+          {[1,2,3,4,5,6].map(n => {
+            const c = CLASS_COLORS[n];
+            const cnt = classCounts[n] || 0;
+            const isSelected = selectedClass === n;
+            return (
+              <div key={n} style={{
+                ...styles.statChip,
+                background: c.bg,
+                border: `1.5px solid ${isSelected ? c.accent : c.border}`,
+                opacity: (myClassOnly && selectedClass && !isSelected) ? 0.3 : 1,
+              }}>
+                <span style={{ fontSize: 10, color: c.accent, fontWeight: 600 }}>{n}반</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: c.accent, lineHeight: 1 }}>{cnt}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── 힌트 ── */}
@@ -237,32 +242,41 @@ const styles = {
     lineHeight: 1.3,
   },
 
-  // 통계 행 — ClassSelector와 동일한 6열 그리드
+  // 통계 행: 레이블 너비 고정 + 6열 그리드 (ClassSelector와 동일 구조)
   statsRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
+  },
+  filterBtn: {
+    width: LABEL_WIDTH,
+    flexShrink: 0,
+    padding: '6px 0',
+    borderRadius: 10,
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    textAlign: 'center',
+    transition: 'all 0.15s',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  filterPlaceholder: {
+    width: LABEL_WIDTH,
+    flexShrink: 0,
+    textAlign: 'center',
+  },
+  chipsGrid: {
+    flex: 1,
     display: 'grid',
     gridTemplateColumns: 'repeat(6, 1fr)',
     gap: 6,
-    flexShrink: 0,
   },
   statChip: {
     display: 'flex', flexDirection: 'column', alignItems: 'center',
     padding: '7px 0', borderRadius: 10, gap: 2,
     transition: 'opacity 0.15s',
-  },
-  // 전체 카운트 + 필터 행
-  subRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexShrink: 0,
-  },
-  totalText: {
-    fontSize: 11, color: '#9CA3AF',
-  },
-  filterBtn: {
-    padding: '5px 11px', borderRadius: 20,
-    fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap',
-    transition: 'all 0.15s', WebkitTapHighlightColor: 'transparent',
   },
 
   // 캘린더

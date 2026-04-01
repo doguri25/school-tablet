@@ -38,27 +38,34 @@ export default function ClassSelector({ selectedClass, onSelectClass }) {
   );
 }
 
+const LABEL_WIDTH = 60;
+
 const styles = {
   wrapper: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '9px 8px',
     background: '#fff',
     borderBottom: '1px solid #F3F4F6',
-    padding: '6px 8px 8px',
   },
   label: {
-    fontSize: 11,
+    width: LABEL_WIDTH,
+    flexShrink: 0,
+    fontSize: 12,
     fontWeight: 600,
     color: '#9CA3AF',
-    marginBottom: 4,
-    paddingLeft: 2,
-    display: 'block',
+    whiteSpace: 'nowrap',
+    textAlign: 'center',
   },
   pills: {
+    flex: 1,
     display: 'grid',
     gridTemplateColumns: 'repeat(6, 1fr)',
     gap: 6,
   },
   pill: {
-    padding: '7px 0',
+    padding: '6px 0',
     borderRadius: 10,
     fontSize: 13,
     cursor: 'pointer',
@@ -71,3 +78,5 @@ const styles = {
     fontSize: 11,
   },
 };
+
+export { LABEL_WIDTH };
