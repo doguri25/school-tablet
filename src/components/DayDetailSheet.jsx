@@ -167,7 +167,7 @@ const styles = {
     position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
     width: '100%', maxWidth: 480, background: '#fff', borderRadius: '20px 20px 0 0',
     zIndex: 201, paddingBottom: 'env(safe-area-inset-bottom)',
-    maxHeight: '85dvh', overflowY: 'auto', boxShadow: '0 -4px 24px rgba(0,0,0,0.15)',
+    maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 -4px 24px rgba(0,0,0,0.15)',
   },
   handle: { width: 40, height: 4, borderRadius: 2, background: '#D1D5DB', margin: '12px auto 0' },
   sheetHeader: {

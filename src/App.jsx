@@ -28,15 +28,22 @@ export default function App() {
   const [connStatus, setConnStatus] = useState('connecting'); // connecting | connected | error
 
   useEffect(() => {
+    // 5초 안에 Firebase 응답 없으면 강제로 로딩 해제 (Safari 등 연결 지연 대비)
+    const timeout = setTimeout(() => setLoading(false), 5000);
+
     const unsub = subscribeRentals(
       data => {
+        clearTimeout(timeout);
         setAllRentals(data);
         setLoading(false);
         setConnStatus('connected');
       },
-      status => setConnStatus(status)
+      status => {
+        setConnStatus(status);
+        if (status === 'error') setLoading(false);
+      }
     );
-    return unsub;
+    return () => { clearTimeout(timeout); unsub(); };
   }, []);
 
   function handleSelectClass(classNum) {
@@ -113,7 +120,7 @@ export default function App() {
 
 const styles = {
   app: {
-    minHeight: '100dvh',
+    minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
     background: '#F8FAFC',
