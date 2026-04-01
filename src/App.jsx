@@ -25,12 +25,17 @@ export default function App() {
   // 전체 대여 데이터 (Firestore 또는 localStorage — 실시간 동기화)
   const [allRentals, setAllRentals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [connStatus, setConnStatus] = useState('connecting'); // connecting | connected | error
 
   useEffect(() => {
-    const unsub = subscribeRentals(data => {
-      setAllRentals(data);
-      setLoading(false);
-    });
+    const unsub = subscribeRentals(
+      data => {
+        setAllRentals(data);
+        setLoading(false);
+        setConnStatus('connected');
+      },
+      status => setConnStatus(status)
+    );
     return unsub;
   }, []);
 
@@ -44,10 +49,15 @@ export default function App() {
       <Header allRentals={allRentals} />
       <ClassSelector selectedClass={selectedClass} onSelectClass={handleSelectClass} />
 
-      {/* Firebase 미설정 안내 */}
+      {/* 연결 상태 배너 */}
       {!isConfigured && (
         <div style={styles.setupBanner}>
           ⚠️ 현재 이 기기에서만 저장됩니다. 선생님 간 공유하려면 Firebase 설정이 필요합니다.
+        </div>
+      )}
+      {isConfigured && connStatus === 'error' && (
+        <div style={styles.errorBanner}>
+          ⚠️ 서버 연결 끊김 — 자동 재연결 중...
         </div>
       )}
 
@@ -111,6 +121,14 @@ const styles = {
     margin: '0 auto',
     position: 'relative',
     boxShadow: '0 0 40px rgba(0,0,0,0.08)',
+  },
+  errorBanner: {
+    padding: '7px 14px',
+    background: '#FEE2E2',
+    borderBottom: '1px solid #FECACA',
+    fontSize: 12,
+    color: '#991B1B',
+    textAlign: 'center',
   },
   setupBanner: {
     padding: '8px 14px',

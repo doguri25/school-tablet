@@ -53,15 +53,40 @@ export async function updateRental(id, { classNumber }) {
 }
 
 // ── 실시간 리스너 구독 (App.jsx에서 한 번만 호출) ─────────────────────
-export function subscribeRentals(onUpdate) {
+export function subscribeRentals(onUpdate, onConnectionChange) {
   if (isConfigured && db) {
     const q = query(collection(db, COLLECTION));
-    return onSnapshot(q, snapshot => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      onUpdate(data);
-    });
+
+    let retryTimer = null;
+    let unsub = null;
+
+    function startListener() {
+      if (unsub) unsub();
+
+      unsub = onSnapshot(
+        q,
+        { includeMetadataChanges: false },
+        snapshot => {
+          const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+          onUpdate(data);
+          onConnectionChange?.('connected');
+        },
+        err => {
+          console.error('Firestore 연결 오류:', err);
+          onConnectionChange?.('error');
+          // 5초 후 자동 재연결
+          retryTimer = setTimeout(startListener, 5000);
+        }
+      );
+    }
+
+    startListener();
+
+    return () => {
+      if (retryTimer) clearTimeout(retryTimer);
+      if (unsub) unsub();
+    };
   } else {
-    // localStorage 폴백: 폴링 없이 초기 1회 로드
     onUpdate(localGetAll());
     return () => {};
   }
