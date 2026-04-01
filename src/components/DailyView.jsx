@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getPeriodsForDate, getCurrentPeriod } from '../utils/schedule';
-import { getRentalsByDate, addRental, deleteRental, updateRental } from '../utils/storage';
+import { addRental, deleteRental, updateRental } from '../utils/storage';
 import { today, formatDate, formatDateKo, getDayLabel } from '../utils/dateUtils';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -19,21 +19,25 @@ function addDays(dateStr, n) {
   return formatDate(d);
 }
 
-export default function DailyView({ selectedClass, onRentalChange }) {
+export default function DailyView({ selectedClass, allRentals }) {
   const [dateStr, setDateStr] = useState(today);
-  const [rentals, setRentals] = useState([]);
   const [currentPeriod, setCurrentPeriod] = useState(getCurrentPeriod);
   const [changeConfirm, setChangeConfirm] = useState(null);
 
   const periods = getPeriodsForDate(dateStr);
   const isToday = dateStr === today();
 
-  function refresh() {
-    setRentals(getRentalsByDate(dateStr));
+  useEffect(() => {
     setCurrentPeriod(getCurrentPeriod());
-  }
+    const id = setInterval(() => setCurrentPeriod(getCurrentPeriod()), 60000);
+    return () => clearInterval(id);
+  }, []);
 
-  useEffect(() => { refresh(); }, [dateStr]);
+  // 현재 날짜의 대여 목록 (allRentals에서 필터 — 실시간 자동 반영)
+  const rentals = useMemo(
+    () => allRentals.filter(r => r.date === dateStr),
+    [allRentals, dateStr]
+  );
 
   function getRentalForPeriod(period) {
     return rentals.find(r => r.period === period) || null;
@@ -41,18 +45,16 @@ export default function DailyView({ selectedClass, onRentalChange }) {
 
   function handleRegister(period) {
     if (!selectedClass) return;
+    if (getRentalForPeriod(period)) return; // 이미 등록됨
     addRental({ date: dateStr, period, classNumber: selectedClass });
-    refresh(); onRentalChange();
   }
 
   function handleDelete(id) {
     deleteRental(id);
-    refresh(); onRentalChange();
   }
 
   function handleCardClick(rental) {
-    if (!selectedClass || !rental) return;
-    if (rental.classNumber === selectedClass) return;
+    if (!selectedClass || !rental || rental.classNumber === selectedClass) return;
     setChangeConfirm({ rental, fromClass: rental.classNumber, toClass: selectedClass });
   }
 
@@ -60,7 +62,6 @@ export default function DailyView({ selectedClass, onRentalChange }) {
     if (!changeConfirm) return;
     updateRental(changeConfirm.rental.id, { classNumber: changeConfirm.toClass });
     setChangeConfirm(null);
-    refresh(); onRentalChange();
   }
 
   return (
@@ -77,7 +78,6 @@ export default function DailyView({ selectedClass, onRentalChange }) {
       <div style={styles.datNav}>
         <button style={styles.navArrow} onClick={() => setDateStr(prev => addDays(prev, -1))}>‹</button>
         <div style={styles.datCenter}>
-          {/* label이 input을 감싸서 클릭 영역이 텍스트 크기만큼만 적용됨 */}
           <label style={styles.dateDisplay}>
             <input
               type="date"
@@ -92,14 +92,10 @@ export default function DailyView({ selectedClass, onRentalChange }) {
         <button style={styles.navArrow} onClick={() => setDateStr(prev => addDays(prev, 1))}>›</button>
       </div>
 
-      {/* 반 미선택 안내 */}
       {!selectedClass && (
-        <div style={styles.noClass}>
-          위에서 내 반을 선택하세요
-        </div>
+        <div style={styles.noClass}>위에서 내 반을 선택하세요</div>
       )}
 
-      {/* 교시 리스트 */}
       <div style={styles.list}>
         {periods.map((p, idx) => {
           const rental = getRentalForPeriod(p.period);
@@ -119,13 +115,8 @@ export default function DailyView({ selectedClass, onRentalChange }) {
                 cursor: isChangeable ? 'pointer' : 'default',
               }}
             >
-              {/* 현재 교시 인디케이터 */}
-              <div style={{
-                ...styles.currentBar,
-                background: isCurrent ? '#F59E0B' : 'transparent',
-              }} />
+              <div style={{ ...styles.currentBar, background: isCurrent ? '#F59E0B' : 'transparent' }} />
 
-              {/* 교시 정보 */}
               <div style={styles.periodMeta}>
                 <div style={{
                   ...styles.periodBadge,
@@ -137,14 +128,11 @@ export default function DailyView({ selectedClass, onRentalChange }) {
                 <div style={styles.periodTime}>{p.start}~{p.end}</div>
               </div>
 
-              {/* 상태 */}
               <div style={styles.statusArea}>
                 {rental ? (
                   <div style={{
                     ...styles.classBadge,
-                    background: c.bg,
-                    color: c.accent,
-                    border: `1px solid ${c.border}`,
+                    background: c.bg, color: c.accent, border: `1px solid ${c.border}`,
                   }}>
                     {rental.classNumber}반 사용중
                     {isChangeable && <span style={styles.changeArrow}> → {selectedClass}반</span>}
@@ -154,7 +142,6 @@ export default function DailyView({ selectedClass, onRentalChange }) {
                 )}
               </div>
 
-              {/* 액션 버튼 */}
               <div style={styles.actionArea}>
                 {rental ? (
                   <button
@@ -165,10 +152,7 @@ export default function DailyView({ selectedClass, onRentalChange }) {
                   </button>
                 ) : selectedClass ? (
                   <button
-                    style={{
-                      ...styles.registerBtn,
-                      background: CLASS_COLORS[selectedClass].accent,
-                    }}
+                    style={{ ...styles.registerBtn, background: CLASS_COLORS[selectedClass].accent }}
                     onClick={() => handleRegister(p.period)}
                   >
                     등록
@@ -186,174 +170,53 @@ export default function DailyView({ selectedClass, onRentalChange }) {
 }
 
 const styles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    background: '#F8FAFC',
-    minHeight: '100%',
-  },
+  container: { display: 'flex', flexDirection: 'column', background: '#F8FAFC', minHeight: '100%' },
   datNav: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '12px 16px',
-    background: '#fff',
-    borderBottom: '1px solid #E5E7EB',
-    gap: 4,
+    display: 'flex', alignItems: 'center', padding: '12px 16px',
+    background: '#fff', borderBottom: '1px solid #E5E7EB', gap: 4,
   },
   navArrow: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    background: '#F3F4F6',
-    border: 'none',
-    fontSize: 22,
-    color: '#374151',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    lineHeight: 1,
+    width: 36, height: 36, borderRadius: 10, background: '#F3F4F6', border: 'none',
+    fontSize: 22, color: '#374151', cursor: 'pointer', display: 'flex',
+    alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1,
   },
-  datCenter: {
-    flex: 1,
-    display: 'flex',
-    justifyContent: 'center',
-  },
-  dateHidden: {
-    position: 'absolute',
-    inset: 0,
-    opacity: 0,
-    cursor: 'pointer',
-    zIndex: 1,
-    width: '100%',
-    height: '100%',
-  },
+  datCenter: { flex: 1, display: 'flex', justifyContent: 'center' },
+  dateHidden: { position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', zIndex: 1, width: '100%', height: '100%' },
   dateDisplay: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    cursor: 'pointer',
-    position: 'relative',   /* input이 이 안에서만 absolute 적용 */
-    padding: '6px 10px',
-    borderRadius: 10,
-    background: '#F3F4F6',
+    display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+    position: 'relative', padding: '6px 10px', borderRadius: 10, background: '#F3F4F6',
   },
-  dateText: {
-    fontSize: 15,
-    fontWeight: 700,
-    color: '#111827',
-  },
-  todayPill: {
-    fontSize: 11,
-    fontWeight: 700,
-    padding: '2px 8px',
-    borderRadius: 10,
-    background: '#1D4ED8',
-    color: '#fff',
-  },
+  dateText: { fontSize: 15, fontWeight: 700, color: '#111827' },
+  todayPill: { fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: '#1D4ED8', color: '#fff' },
   noClass: {
-    textAlign: 'center',
-    padding: '16px',
-    fontSize: 13,
-    color: '#9CA3AF',
-    background: '#FFFBEB',
-    borderBottom: '1px solid #FEF3C7',
+    textAlign: 'center', padding: '16px', fontSize: 13, color: '#9CA3AF',
+    background: '#FFFBEB', borderBottom: '1px solid #FEF3C7',
   },
   list: {
-    background: '#fff',
-    margin: '12px',
-    borderRadius: 14,
-    overflow: 'hidden',
+    background: '#fff', margin: '12px', borderRadius: 14, overflow: 'hidden',
     boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
     border: '1px solid #E5E7EB',
   },
   row: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '11px 14px 11px 0',
-    gap: 10,
-    position: 'relative',
-    transition: 'background 0.1s',
+    display: 'flex', alignItems: 'center', padding: '11px 14px 11px 0',
+    gap: 10, position: 'relative', transition: 'background 0.1s',
   },
-  currentBar: {
-    width: 3,
-    alignSelf: 'stretch',
-    borderRadius: '0 2px 2px 0',
-    flexShrink: 0,
-    marginLeft: 0,
-  },
-  periodMeta: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 2,
-    width: 48,
-    flexShrink: 0,
-  },
-  periodBadge: {
-    fontSize: 12,
-    fontWeight: 700,
-    padding: '3px 6px',
-    borderRadius: 6,
-    whiteSpace: 'nowrap',
-  },
-  periodTime: {
-    fontSize: 10,
-    color: '#9CA3AF',
-    fontVariantNumeric: 'tabular-nums',
-    whiteSpace: 'nowrap',
-  },
-  statusArea: {
-    display: 'flex',
-    alignItems: 'center',
-    minWidth: 0,
-    overflow: 'hidden',
-  },
-  classBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    fontSize: 13,
-    fontWeight: 600,
-    padding: '5px 10px',
-    borderRadius: 8,
-    gap: 2,
-  },
-  changeArrow: {
-    fontSize: 11,
-    opacity: 0.7,
-  },
-  freeBadge: {
-    fontSize: 13,
-    color: '#9CA3AF',
-    fontWeight: 500,
-  },
-  actionArea: {
-    flexShrink: 0,
-    marginLeft: 'auto',
-  },
+  currentBar: { width: 3, alignSelf: 'stretch', borderRadius: '0 2px 2px 0', flexShrink: 0, marginLeft: 0 },
+  periodMeta: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, width: 48, flexShrink: 0 },
+  periodBadge: { fontSize: 12, fontWeight: 700, padding: '3px 6px', borderRadius: 6, whiteSpace: 'nowrap' },
+  periodTime: { fontSize: 10, color: '#9CA3AF', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' },
+  statusArea: { display: 'flex', alignItems: 'center', minWidth: 0, overflow: 'hidden' },
+  classBadge: { display: 'inline-flex', alignItems: 'center', fontSize: 13, fontWeight: 600, padding: '5px 10px', borderRadius: 8, gap: 2 },
+  changeArrow: { fontSize: 11, opacity: 0.7 },
+  freeBadge: { fontSize: 13, color: '#9CA3AF', fontWeight: 500 },
+  actionArea: { flexShrink: 0, marginLeft: 'auto' },
   returnBtn: {
-    padding: '10px 18px',
-    borderRadius: 10,
-    background: '#FEF2F2',
-    color: '#DC2626',
-    fontSize: 14,
-    fontWeight: 700,
-    border: '1.5px solid #FECACA',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
+    padding: '10px 18px', borderRadius: 10, background: '#FEF2F2', color: '#DC2626',
+    fontSize: 14, fontWeight: 700, border: '1.5px solid #FECACA', cursor: 'pointer', whiteSpace: 'nowrap',
   },
   registerBtn: {
-    padding: '10px 18px',
-    borderRadius: 10,
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 700,
-    border: 'none',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
+    padding: '10px 18px', borderRadius: 10, color: '#fff',
+    fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
   },
-  noActionPlaceholder: {
-    width: 44,
-  },
+  noActionPlaceholder: { width: 44 },
 };

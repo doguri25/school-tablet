@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { PERIODS, getMaxPeriod } from '../utils/schedule';
-import { getRentalsByDateRange, addRental, deleteRental, updateRental } from '../utils/storage';
+import { addRental, deleteRental, updateRental } from '../utils/storage';
 import { today, getWeekDays, getWeekRangeLabel, prevWeek, nextWeek } from '../utils/dateUtils';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -15,19 +15,18 @@ const CLASS_COLORS = {
 
 const DAY_LABELS = ['월', '화', '수', '목', '금'];
 
-export default function WeeklyView({ selectedClass, onRentalChange }) {
+export default function WeeklyView({ selectedClass, allRentals }) {
   const [baseDate, setBaseDate] = useState(today);
-  const [rentals, setRentals] = useState([]);
-  const [confirm, setConfirm] = useState(null); // { type:'register'|'change'|'return', date, period, rental }
+  const [confirm, setConfirm] = useState(null);
 
   const weekDays = getWeekDays(baseDate);
   const todayStr = today();
 
-  function refresh() {
-    setRentals(getRentalsByDateRange(weekDays[0], weekDays[4]));
-  }
-
-  useEffect(() => { refresh(); }, [baseDate]);
+  const rentals = useMemo(() => {
+    const start = weekDays[0];
+    const end = weekDays[4];
+    return allRentals.filter(r => r.date >= start && r.date <= end);
+  }, [allRentals, baseDate]);
 
   function getRental(dateStr, period) {
     return rentals.find(r => r.date === dateStr && r.period === period) || null;
@@ -63,8 +62,6 @@ export default function WeeklyView({ selectedClass, onRentalChange }) {
       deleteRental(confirm.rental.id);
     }
     setConfirm(null);
-    refresh();
-    onRentalChange?.();
   }
 
   function getConfirmMessage() {

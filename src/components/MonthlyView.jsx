@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { getRentalsByMonth } from '../utils/storage';
+import { useState, useMemo } from 'react';
 import { today, getMonthCalendar, formatMonthKo, prevMonth, nextMonth } from '../utils/dateUtils';
 import DayDetailSheet from './DayDetailSheet';
 
@@ -14,21 +13,20 @@ const CLASS_COLORS = {
 
 const DAY_HEADERS = ['일', '월', '화', '수', '목', '금', '토'];
 
-export default function MonthlyView({ selectedClass, onRentalChange }) {
+export default function MonthlyView({ selectedClass, allRentals }) {
   const todayStr = today();
   const nowDate = new Date();
   const [year, setYear] = useState(nowDate.getFullYear());
   const [month, setMonth] = useState(nowDate.getMonth() + 1);
-  const [rentals, setRentals] = useState([]);
-  const [sheetDate, setSheetDate] = useState(null); // 클릭한 날짜 (DayDetailSheet 표시용)
-
-  function refresh() {
-    setRentals(getRentalsByMonth(year, month));
-  }
-
-  useEffect(() => { refresh(); }, [year, month]);
+  const [sheetDate, setSheetDate] = useState(null);
 
   const weeks = getMonthCalendar(year, month);
+
+  const monthPrefix = `${year}-${String(month).padStart(2, '0')}`;
+  const rentals = useMemo(
+    () => allRentals.filter(r => r.date.startsWith(monthPrefix)),
+    [allRentals, monthPrefix]
+  );
 
   const classCounts = {};
   rentals.forEach(r => { classCounts[r.classNumber] = (classCounts[r.classNumber] || 0) + 1; });
@@ -43,24 +41,16 @@ export default function MonthlyView({ selectedClass, onRentalChange }) {
 
   function handleSheetClose() {
     setSheetDate(null);
-    refresh(); // 등록/반납 후 캘린더 갱신
-  }
-
-  function handleRentalChange() {
-    refresh();
-    onRentalChange?.();
   }
 
   return (
     <div style={styles.container}>
-      {/* 월 네비게이터 */}
       <div style={styles.nav}>
         <button style={styles.navBtn} onClick={handlePrev}>‹</button>
         <span style={styles.monthLabel}>{formatMonthKo(year, month)}</span>
         <button style={styles.navBtn} onClick={handleNext}>›</button>
       </div>
 
-      {/* 이달 통계 */}
       <div style={styles.statsRow}>
         {[1,2,3,4,5,6].map(n => {
           const c = CLASS_COLORS[n];
@@ -84,10 +74,8 @@ export default function MonthlyView({ selectedClass, onRentalChange }) {
         </div>
       </div>
 
-      {/* 클릭 안내 */}
       <div style={styles.hint}>날짜를 누르면 해당 날의 교시별 현황을 볼 수 있습니다.</div>
 
-      {/* 캘린더 */}
       <div style={styles.cal}>
         <div style={styles.dayHeaders}>
           {DAY_HEADERS.map((d, i) => (
@@ -128,23 +116,15 @@ export default function MonthlyView({ selectedClass, onRentalChange }) {
                       : '#374151',
                     background: isToday ? '#1D4ED8' : 'transparent',
                     borderRadius: isToday ? '50%' : 0,
-                    width: 20,
-                    height: 20,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    width: 20, height: 20,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
                     {parseInt(dateStr.slice(8), 10)}
                   </div>
                   <div style={styles.dots}>
                     {filtered.slice(0, 3).map(r => {
                       const c = CLASS_COLORS[r.classNumber];
-                      return (
-                        <div key={r.id} style={{
-                          ...styles.dot,
-                          background: c.accent,
-                        }} />
-                      );
+                      return <div key={r.id} style={{ ...styles.dot, background: c.accent }} />;
                     })}
                     {filtered.length > 3 && (
                       <span style={styles.more}>+{filtered.length - 3}</span>
@@ -157,13 +137,12 @@ export default function MonthlyView({ selectedClass, onRentalChange }) {
         ))}
       </div>
 
-      {/* 날짜 상세 바텀시트 */}
       {sheetDate && (
         <DayDetailSheet
           dateStr={sheetDate}
           selectedClass={selectedClass}
+          allRentals={allRentals}
           onClose={handleSheetClose}
-          onRentalChange={handleRentalChange}
         />
       )}
     </div>
@@ -171,129 +150,49 @@ export default function MonthlyView({ selectedClass, onRentalChange }) {
 }
 
 const styles = {
-  container: {
-    padding: '12px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 12,
-  },
+  container: { padding: '12px', display: 'flex', flexDirection: 'column', gap: 12 },
   nav: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    background: '#fff',
-    borderRadius: 12,
-    padding: '10px 14px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-    border: '1px solid #E5E7EB',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    background: '#fff', borderRadius: 12, padding: '10px 14px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #E5E7EB',
   },
   navBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    background: '#F3F4F6',
-    border: 'none',
-    fontSize: 20,
-    color: '#374151',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    lineHeight: 1,
+    width: 34, height: 34, borderRadius: 8, background: '#F3F4F6', border: 'none',
+    fontSize: 20, color: '#374151', cursor: 'pointer', display: 'flex',
+    alignItems: 'center', justifyContent: 'center', lineHeight: 1,
   },
-  monthLabel: {
-    fontSize: 16,
-    fontWeight: 800,
-    color: '#111827',
-  },
-  statsRow: {
-    display: 'flex',
-    gap: 6,
-    overflowX: 'auto',
-    padding: '2px 0',
-  },
+  monthLabel: { fontSize: 16, fontWeight: 800, color: '#111827' },
+  statsRow: { display: 'flex', gap: 6, overflowX: 'auto', padding: '2px 0' },
   statChip: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '7px 10px',
-    borderRadius: 10,
-    gap: 3,
-    flexShrink: 0,
-    minWidth: 44,
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    padding: '7px 10px', borderRadius: 10, gap: 3, flexShrink: 0, minWidth: 44,
     transition: 'opacity 0.15s',
   },
   totalChip: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '7px 10px',
-    borderRadius: 10,
-    gap: 3,
-    flexShrink: 0,
-    minWidth: 44,
-    background: '#F3F4F6',
-    border: '1.5px solid #E5E7EB',
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    padding: '7px 10px', borderRadius: 10, gap: 3, flexShrink: 0, minWidth: 44,
+    background: '#F3F4F6', border: '1.5px solid #E5E7EB',
   },
-  hint: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    textAlign: 'center',
-  },
+  hint: { fontSize: 11, color: '#9CA3AF', textAlign: 'center' },
   cal: {
-    background: '#fff',
-    borderRadius: 12,
-    overflow: 'hidden',
-    border: '1px solid #E5E7EB',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+    background: '#fff', borderRadius: 12, overflow: 'hidden',
+    border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
   },
   dayHeaders: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(7, 1fr)',
-    background: '#F9FAFB',
-    borderBottom: '1px solid #E5E7EB',
+    display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
+    background: '#F9FAFB', borderBottom: '1px solid #E5E7EB',
   },
-  dayHeader: {
-    padding: '7px 0',
-    textAlign: 'center',
-    fontSize: 12,
-    fontWeight: 700,
-  },
-  week: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(7, 1fr)',
-  },
+  dayHeader: { padding: '7px 0', textAlign: 'center', fontSize: 12, fontWeight: 700 },
+  week: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' },
   dayCell: {
-    minHeight: 56,
-    padding: '4px',
-    overflow: 'hidden',
-    transition: 'background 0.1s',
-    WebkitTapHighlightColor: 'rgba(0,0,0,0.05)',
+    minHeight: 56, padding: '4px', overflow: 'hidden',
+    transition: 'background 0.1s', WebkitTapHighlightColor: 'rgba(0,0,0,0.05)',
   },
   dayNum: {
-    fontSize: 12,
-    fontWeight: 500,
-    marginBottom: 3,
-    lineHeight: 1,
-    fontVariantNumeric: 'tabular-nums',
-    flexShrink: 0,
+    fontSize: 12, fontWeight: 500, marginBottom: 3, lineHeight: 1,
+    fontVariantNumeric: 'tabular-nums', flexShrink: 0,
   },
-  dots: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: 2,
-  },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: '50%',
-    flexShrink: 0,
-  },
-  more: {
-    fontSize: 9,
-    color: '#9CA3AF',
-    fontWeight: 600,
-    lineHeight: 1,
-    alignSelf: 'center',
-  },
+  dots: { display: 'flex', flexWrap: 'wrap', gap: 2 },
+  dot: { width: 7, height: 7, borderRadius: '50%', flexShrink: 0 },
+  more: { fontSize: 9, color: '#9CA3AF', fontWeight: 600, lineHeight: 1, alignSelf: 'center' },
 };

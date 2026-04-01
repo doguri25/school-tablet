@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getCurrentPeriod, getPeriodLabel, getPeriodTime, LUNCH } from '../utils/schedule';
-import { getRentalByDatePeriod } from '../utils/storage';
 import { today } from '../utils/dateUtils';
 
 const CLASS_COLORS = {
@@ -14,30 +13,38 @@ const CLASS_COLORS = {
 
 const DAY_SHORT = ['일', '월', '화', '수', '목', '금', '토'];
 
-function getCurrentStatus() {
-  const period = getCurrentPeriod();
-  if (period === null) return { type: 'outside' };
-  if (period === 'lunch') return { type: 'lunch' };
-  const rental = getRentalByDatePeriod(today(), period);
-  return { type: 'period', period, periodLabel: getPeriodLabel(period), periodTime: getPeriodTime(period), rental };
-}
-
-export default function Header({ rentalVersion }) {
+export default function Header({ allRentals }) {
   const [now, setNow] = useState(new Date());
-  const [status, setStatus] = useState(getCurrentStatus);
+  const [currentPeriod, setCurrentPeriod] = useState(getCurrentPeriod);
 
   useEffect(() => {
-    const tick = () => { setNow(new Date()); setStatus(getCurrentStatus()); };
+    const tick = () => { setNow(new Date()); setCurrentPeriod(getCurrentPeriod()); };
     const id = setInterval(tick, 10000);
     return () => clearInterval(id);
   }, []);
-
-  useEffect(() => { setStatus(getCurrentStatus()); }, [rentalVersion]);
 
   const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
   const mo = now.getMonth() + 1;
   const da = now.getDate();
   const dy = DAY_SHORT[now.getDay()];
+
+  // 현재 교시 대여 기록 (allRentals에서 실시간 반영)
+  const currentRental = useMemo(() => {
+    if (!currentPeriod || currentPeriod === 'lunch') return null;
+    const todayStr = today();
+    return allRentals.find(r => r.date === todayStr && r.period === currentPeriod) || null;
+  }, [allRentals, currentPeriod]);
+
+  const status = useMemo(() => {
+    if (currentPeriod === null) return { type: 'outside' };
+    if (currentPeriod === 'lunch') return { type: 'lunch' };
+    return {
+      type: 'period',
+      periodLabel: getPeriodLabel(currentPeriod),
+      periodTime: getPeriodTime(currentPeriod),
+      rental: currentRental,
+    };
+  }, [currentPeriod, currentRental]);
 
   return (
     <header style={styles.header}>
@@ -86,88 +93,23 @@ function LocationBar({ status }) {
 }
 
 const styles = {
-  header: {
-    background: 'linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%)',
-    color: '#fff',
-  },
-  top: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '12px 16px 8px',
-  },
+  header: { background: 'linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%)', color: '#fff' },
+  top: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px 8px' },
   titleWrap: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 1,
-    cursor: 'pointer',
-    userSelect: 'none',
-    WebkitTapHighlightColor: 'transparent',
+    display: 'flex', flexDirection: 'column', gap: 1,
+    cursor: 'pointer', userSelect: 'none', WebkitTapHighlightColor: 'transparent',
   },
-  school: {
-    fontSize: 11,
-    opacity: 0.75,
-    fontWeight: 500,
-    letterSpacing: '0.3px',
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: 800,
-    letterSpacing: '-0.4px',
-  },
-  clockWrap: {
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  dateBig: {
-    fontSize: 17,
-    fontWeight: 700,
-    opacity: 0.92,
-    letterSpacing: '-0.3px',
-    lineHeight: 1,
-  },
-  dayTag: {
-    fontSize: 14,
-    fontWeight: 500,
-    opacity: 0.75,
-  },
-  clock: {
-    fontSize: 28,
-    fontWeight: 800,
-    letterSpacing: '1px',
-    fontVariantNumeric: 'tabular-nums',
-    lineHeight: 1,
-  },
-  locationBar: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6,
-    padding: '7px 16px',
-    fontSize: 13,
-  },
-  barGray: {
-    background: 'rgba(255,255,255,0.12)',
-    color: 'rgba(255,255,255,0.9)',
-  },
-  barYellow: {
-    background: 'rgba(254,240,138,0.2)',
-    color: '#FDE68A',
-  },
-  barColored: {
-    borderRadius: 0,
-  },
-  locIcon: {
-    fontSize: 15,
-  },
-  locMain: {
-    fontWeight: 700,
-    fontSize: 13,
-  },
-  locSub: {
-    fontSize: 12,
-    opacity: 0.8,
-    marginLeft: 2,
-  },
+  school: { fontSize: 11, opacity: 0.75, fontWeight: 500, letterSpacing: '0.3px' },
+  title: { fontSize: 17, fontWeight: 800, letterSpacing: '-0.4px' },
+  clockWrap: { display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dateBig: { fontSize: 17, fontWeight: 700, opacity: 0.92, letterSpacing: '-0.3px', lineHeight: 1 },
+  dayTag: { fontSize: 14, fontWeight: 500, opacity: 0.75 },
+  clock: { fontSize: 28, fontWeight: 800, letterSpacing: '1px', fontVariantNumeric: 'tabular-nums', lineHeight: 1 },
+  locationBar: { display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', fontSize: 13 },
+  barGray: { background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.9)' },
+  barYellow: { background: 'rgba(254,240,138,0.2)', color: '#FDE68A' },
+  barColored: { borderRadius: 0 },
+  locIcon: { fontSize: 15 },
+  locMain: { fontWeight: 700, fontSize: 13 },
+  locSub: { fontSize: 12, opacity: 0.8, marginLeft: 2 },
 };

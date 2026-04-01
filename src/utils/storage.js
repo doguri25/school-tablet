@@ -1,67 +1,68 @@
-const STORAGE_KEY = 'hongbuk_tablet_rentals';
+import {
+  collection, addDoc, deleteDoc, doc, updateDoc, query, onSnapshot
+} from 'firebase/firestore';
+import { db, isConfigured } from './firebase';
+
+const COLLECTION = 'rentals';
+
+// ── localStorage 폴백 (Firebase 미설정 시) ──────────────────────────
+const LOCAL_KEY = 'hongbuk_tablet_rentals';
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
-export function getAllRentals() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
+function localGetAll() {
+  try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'); } catch { return []; }
+}
+function localSave(rentals) {
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(rentals));
+}
+
+// ── 쓰기 연산 (Firebase 또는 localStorage) ──────────────────────────
+
+export async function addRental({ date, period, classNumber }) {
+  if (isConfigured && db) {
+    await addDoc(collection(db, COLLECTION), {
+      date, period, classNumber, createdAt: new Date().toISOString(),
+    });
+  } else {
+    const all = localGetAll();
+    if (all.find(r => r.date === date && r.period === period)) return;
+    all.push({ id: generateId(), date, period, classNumber, createdAt: new Date().toISOString() });
+    localSave(all);
   }
 }
 
-function saveAll(rentals) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(rentals));
+export async function deleteRental(id) {
+  if (isConfigured && db) {
+    await deleteDoc(doc(db, COLLECTION, id));
+  } else {
+    localSave(localGetAll().filter(r => r.id !== id));
+  }
 }
 
-export function getRentalsByDate(dateStr) {
-  return getAllRentals().filter(r => r.date === dateStr);
+export async function updateRental(id, { classNumber }) {
+  if (isConfigured && db) {
+    await updateDoc(doc(db, COLLECTION, id), { classNumber });
+  } else {
+    const all = localGetAll();
+    const idx = all.findIndex(r => r.id === id);
+    if (idx !== -1) { all[idx] = { ...all[idx], classNumber }; localSave(all); }
+  }
 }
 
-export function getRentalsByDateRange(startDate, endDate) {
-  return getAllRentals().filter(r => r.date >= startDate && r.date <= endDate);
-}
-
-export function getRentalsByMonth(year, month) {
-  const prefix = `${year}-${String(month).padStart(2, '0')}`;
-  return getAllRentals().filter(r => r.date.startsWith(prefix));
-}
-
-// 특정 날짜+교시의 대여 기록 반환
-export function getRentalByDatePeriod(dateStr, period) {
-  return getAllRentals().find(r => r.date === dateStr && r.period === period) || null;
-}
-
-export function addRental({ date, period, classNumber }) {
-  const rentals = getAllRentals();
-  const existing = rentals.find(r => r.date === date && r.period === period);
-  if (existing) return existing;
-
-  const newRental = {
-    id: generateId(),
-    date,
-    period,
-    classNumber,
-    createdAt: new Date().toISOString(),
-  };
-  rentals.push(newRental);
-  saveAll(rentals);
-  return newRental;
-}
-
-export function deleteRental(id) {
-  const rentals = getAllRentals().filter(r => r.id !== id);
-  saveAll(rentals);
-}
-
-export function updateRental(id, { classNumber }) {
-  const rentals = getAllRentals();
-  const idx = rentals.findIndex(r => r.id === id);
-  if (idx === -1) return null;
-  rentals[idx] = { ...rentals[idx], classNumber };
-  saveAll(rentals);
-  return rentals[idx];
+// ── 실시간 리스너 구독 (App.jsx에서 한 번만 호출) ─────────────────────
+export function subscribeRentals(onUpdate) {
+  if (isConfigured && db) {
+    const q = query(collection(db, COLLECTION));
+    return onSnapshot(q, snapshot => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      onUpdate(data);
+    });
+  } else {
+    // localStorage 폴백: 폴링 없이 초기 1회 로드
+    onUpdate(localGetAll());
+    return () => {};
+  }
 }
