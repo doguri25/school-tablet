@@ -247,12 +247,12 @@ const styles = {
   actionArea: { flexShrink: 0 },
   btnGroup: { display: 'flex', gap: 5 },
   returnBtn: {
-    padding: '8px 14px', borderRadius: 8, background: '#EFF6FF', color: '#1D4ED8',
-    fontSize: 13, fontWeight: 700, border: '1.5px solid #BFDBFE', cursor: 'pointer', whiteSpace: 'nowrap',
+    padding: '10px 18px', borderRadius: 10, background: '#EFF6FF', color: '#1D4ED8',
+    fontSize: 14, fontWeight: 700, border: '1.5px solid #BFDBFE', cursor: 'pointer', whiteSpace: 'nowrap',
   },
   cancelBtn: {
-    padding: '8px 14px', borderRadius: 8, background: '#FEF2F2', color: '#DC2626',
-    fontSize: 13, fontWeight: 700, border: '1.5px solid #FECACA', cursor: 'pointer', whiteSpace: 'nowrap',
+    padding: '10px 18px', borderRadius: 10, background: '#FEF2F2', color: '#DC2626',
+    fontSize: 14, fontWeight: 700, border: '1.5px solid #FECACA', cursor: 'pointer', whiteSpace: 'nowrap',
   },
   cancelSmallBtn: {
     padding: '6px 10px', borderRadius: 7, background: '#F9FAFB', color: '#9CA3AF',
