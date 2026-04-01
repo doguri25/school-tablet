@@ -301,9 +301,10 @@ const styles = {
     whiteSpace: 'nowrap',
   },
   statusArea: {
-    flex: 1,
     display: 'flex',
     alignItems: 'center',
+    minWidth: 0,
+    overflow: 'hidden',
   },
   classBadge: {
     display: 'inline-flex',
@@ -325,6 +326,7 @@ const styles = {
   },
   actionArea: {
     flexShrink: 0,
+    marginLeft: 'auto',
   },
   returnBtn: {
     padding: '6px 12px',
